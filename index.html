@@ -1,0 +1,1098 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0d0d10">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Calc HP">
+<title>Calculadora HP Style</title>
+<style>
+  :root{
+    --accent: #7c3aed;
+    --accent-dark: #5b21b6;
+    --bg: #0d0d10;
+    --screen-bg: #111318;
+    --key-bg: #d9d9dc;
+    --key-text: #111;
+    --key-fn-bg: #1c1e24;
+    --key-fn-text: #e5e5e5;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
+  html,body{
+    margin:0; padding:0;
+    height:100%;
+    height:100dvh;
+    background:var(--bg);
+    font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+    overflow:hidden; user-select:none;
+    overscroll-behavior: none;
+  }
+  #app{
+    display:flex; flex-direction:column;
+    height:100vh; height:100dvh; width:100vw;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+  /* Top bar */
+  #topbar{
+    display:flex; align-items:center; justify-content:space-between;
+    background: linear-gradient(180deg,#1a1a1e,#0e0e11);
+    padding: 8px 12px; color:#ccc; font-size:14px;
+    border-bottom: 1px solid #000;
+  }
+  #topbar .title{
+    color: var(--accent); font-weight:600; letter-spacing:1px;
+    display:flex; align-items:center; gap:6px; min-width:0; overflow:hidden;
+  }
+  #topSaveBtn{
+    font-size: 15px !important; padding: 4px 6px !important; flex-shrink:0;
+  }
+  #fileNameBadge{
+    font-size: 11px; color:#999; font-weight:400; letter-spacing:0;
+    max-width: 90px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  #topbar button{
+    background:none; border:none; color:#ccc; font-size:18px; padding:4px 8px; cursor:pointer;
+  }
+
+  /* Screen */
+  #screen{
+    background: var(--screen-bg);
+    color:#eee;
+    flex: 0 0 auto;
+    min-height: 230px;
+    max-height: 40vh;
+    max-height: 40dvh;
+    display:flex; flex-direction:column;
+    border-bottom: 2px solid var(--accent);
+    position:relative;
+  }
+  #history{
+    flex:1;
+    overflow-y:auto;
+    padding: 6px 12px;
+    display:flex; flex-direction:column;
+    gap:2px;
+  }
+  .hist-entry{
+    display:flex; justify-content:space-between; color:#888;
+    border-bottom: 1px solid #222;
+    padding: 4px 0;
+  }
+  .hist-expr{color:#999; padding: 6px 4px; border-radius: 5px;}
+  .hist-res{color:#ddd; font-weight:500; padding: 6px 4px; border-radius: 5px;}
+  .hist-expr:active{background:#26282f;}
+  .hist-res:active{background:#26282f;}
+  #currentLine{
+    padding: 8px 12px 14px 12px;
+    text-align:right;
+    word-break: break-all;
+    border-top: 1px solid #222;
+  }
+  #expr{
+    color:#aaa;
+    min-height: 22px;
+  }
+  #expr.typing{
+    color:#fff;
+    font-weight:700;
+  }
+  #result{
+    color:#fff;
+    font-weight:600;
+    line-height:1.1;
+    transition: opacity 0.1s;
+  }
+  #result.hidden{
+    opacity: 0;
+    height: 0;
+    overflow: hidden;
+  }
+
+  /* Menu panel */
+  #menuPanel{
+    position:fixed; top:0; left:0; right:0; bottom:0;
+    background: rgba(0,0,0,0.85);
+    display:none;
+    align-items:center; justify-content:center;
+    z-index: 50;
+  }
+  #menuPanel.open{display:flex;}
+  #menuBox{
+    background:#18181c; border-radius: 14px; padding: 20px;
+    width: 90%; max-width: 400px; color:#eee;
+  }
+  #menuBox h3{margin-top:0; color:var(--accent);}
+  #decimalSelect{
+    width:100%; padding:10px; border-radius:8px; border:1px solid #333;
+    background:#111; color:#eee; font-size:16px;
+  }
+  #closeMenu{
+    background: var(--accent); color:#fff; border:none; padding:10px 16px;
+    border-radius: 8px; width:100%; font-size:16px; margin-top:10px; cursor:pointer;
+  }
+  .file-current{
+    font-size:14px; color:#eee; margin-bottom:10px;
+    background:#111; padding:8px 10px; border-radius:8px;
+    border:1px solid #333;
+  }
+  .file-actions{
+    display:grid; grid-template-columns: repeat(3, 1fr); gap:8px;
+  }
+  .file-actions .seg-btn{font-size:13px; padding:10px 4px;}
+
+  /* Settings panel */
+  #settingsPanel{
+    position:fixed; top:0; left:0; right:0; bottom:0;
+    background: rgba(0,0,0,0.85);
+    display:none;
+    align-items:center; justify-content:center;
+    z-index: 50;
+  }
+  #settingsPanel.open{display:flex;}
+  #settingsBox{
+    background:#18181c; border-radius: 14px; padding: 20px;
+    width: 90%; max-width: 400px; color:#eee;
+    max-height: 85vh; overflow-y:auto;
+  }
+  #settingsBox h3{margin-top:0; color:var(--accent);}
+  .setting-row{margin-bottom:16px;}
+  .setting-row label{display:block; margin-bottom:8px; color:#bbb; font-size:14px;}
+  .color-grid{display:flex; flex-wrap:wrap; gap:10px;}
+  .color-dot{
+    width:36px; height:36px; border-radius:50%; cursor:pointer; border: 3px solid transparent;
+  }
+  .color-dot.selected{border-color:#fff;}
+  input[type=range]{width:100%;}
+  #closeSettings{
+    background: var(--accent); color:#fff; border:none; padding:10px 16px;
+    border-radius: 8px; width:100%; font-size:16px; margin-top:10px; cursor:pointer;
+  }
+  #clearHistBtn{
+    background:#333; color:#eee; border:none; padding:10px 16px;
+    border-radius:8px; width:100%; font-size:14px; cursor:pointer; margin-top:6px;
+  }
+
+  /* Keypad */
+  #keypad{
+    flex:1;
+    min-height: 0;
+    display:grid;
+    grid-template-columns: repeat(5, 1fr);
+    grid-template-rows: repeat(6, 1fr);
+    gap: 4px;
+    padding: 6px 6px calc(6px + env(safe-area-inset-bottom)) 6px;
+    background:#0a0a0c;
+  }
+  .key{
+    background: var(--key-bg);
+    color: var(--key-text);
+    border:none; border-radius: 8px;
+    font-size: 20px;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+    box-shadow: 0 2px 0 rgba(0,0,0,0.3);
+  }
+  .key:active{transform: translateY(1px); box-shadow:none;}
+  .key.fn{
+    background: var(--key-fn-bg); color: var(--key-fn-text); font-size:17px;
+  }
+  .key.op{
+    background: var(--accent); color:#fff; font-size:22px; font-weight:600;
+  }
+  .key.equals{
+    background: var(--accent-dark); color:#fff; font-size:22px; font-weight:700;
+  }
+  .key.num{
+    font-size: 26px;
+    font-weight:500;
+  }
+  .key.wide{grid-column: span 2;}
+
+  #angleBadge{
+    font-size: 11px; background: var(--accent); color:#fff;
+    padding: 4px 8px; border-radius: 4px; flex-shrink:0;
+    vertical-align: middle; letter-spacing: 0;
+    border: none; cursor: pointer; font-weight: 700;
+  }
+  #angleBadge:active{opacity: 0.7;}
+  .hist-expr, .hist-res{cursor:pointer;}
+  .hist-entry:active{background:#1e2028;}
+  .hist-entry.copied{background: var(--accent); transition: background 0.15s;}
+  .hist-entry.copied .hist-expr, .hist-entry.copied .hist-res{color:#fff;}
+  .seg-group{display:flex; gap:8px;}
+  .seg-btn{
+    flex:1; padding:10px; border-radius:8px; border:1px solid #333;
+    background:#111; color:#aaa; font-size:15px; cursor:pointer;
+  }
+  .seg-btn.active{background:var(--accent); color:#fff; border-color:var(--accent);}
+
+  .key.small-label{font-size: 13px;}
+
+  /* Generic modal overlay (note / functions box) */
+  .modal-overlay{
+    position:fixed; top:0; left:0; right:0; bottom:0;
+    background: rgba(0,0,0,0.85);
+    display:none;
+    align-items:center; justify-content:center;
+    z-index: 60;
+  }
+  .modal-overlay.open{display:flex;}
+  .modal-box{
+    background:#18181c; border-radius: 14px; padding: 20px;
+    width: 90%; max-width: 400px; color:#eee;
+  }
+  .modal-box h3{margin-top:0; color:var(--accent);}
+  #noteInput{
+    width:100%; box-sizing:border-box; padding:10px; border-radius:8px;
+    border:1px solid #333; background:#111; color:#eee; font-size:15px;
+    resize: vertical; font-family: inherit;
+  }
+  .modal-actions{display:flex; gap:10px; margin-top:14px;}
+  .modal-btn{
+    flex:1; padding:10px; border-radius:8px; border:none; font-size:15px; cursor:pointer;
+  }
+  .modal-btn.primary{background: var(--accent); color:#fff;}
+  .modal-btn.secondary{background:#333; color:#eee;}
+  .fx-grid{
+    display:grid; grid-template-columns: repeat(4, 1fr); gap:8px;
+  }
+  .fx-item{
+    background:#222; color:#eee; border:1px solid #333; border-radius:8px;
+    padding: 14px 4px; font-size:14px; cursor:pointer;
+  }
+  .fx-item:active{background: var(--accent);}
+
+  /* Note entries inside history */
+  .hist-note{
+    color:#8ab4f8; font-style: italic; font-size: 14px;
+    padding: 6px 2px; border-bottom: 1px solid #222;
+    white-space: pre-wrap; word-break: break-word;
+  }
+
+  #saveAsInput{
+    width:100%; box-sizing:border-box; padding:10px; border-radius:8px;
+    border:1px solid #333; background:#111; color:#eee; font-size:15px;
+    font-family: inherit;
+  }
+  .file-list{
+    max-height: 45vh; overflow-y:auto; display:flex; flex-direction:column; gap:6px;
+  }
+  .file-list-item{
+    display:flex; align-items:center; gap:8px;
+    background:#111; border:1px solid #2a2a2e; border-radius:8px;
+    padding: 10px; cursor:pointer;
+  }
+  .file-list-item:active{background:#1c1c20;}
+  .file-list-name{flex:1; color:#eee; font-size:15px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .file-list-date{color:#888; font-size:11px; white-space:nowrap;}
+  .file-delete-btn{
+    background:none; border:none; color:#e57373; font-size:18px;
+    padding: 4px 6px; cursor:pointer; line-height:1;
+  }
+  .file-empty{color:#888; font-size:14px; text-align:center; padding: 16px 0;}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div id="topbar">
+    <button id="menuBtn">☰</button>
+    <div class="title">
+      <button id="topSaveBtn" title="Guardar">💾</button>
+      HP STYLE
+      <span id="fileNameBadge">Nuevo archivo</span>
+      <button id="angleBadge">RAD</button>
+    </div>
+    <button id="settingsBtn">⚙</button>
+  </div>
+
+  <div id="screen">
+    <div id="history"></div>
+    <div id="currentLine">
+      <div id="expr"></div>
+      <div id="result">0</div>
+    </div>
+  </div>
+
+  <div id="keypad">
+    <!-- Row1: herramientas, borrar arriba a la derecha -->
+    <button class="key fn" data-action="sqrt">√</button>
+    <button class="key fn" data-action="(">(</button>
+    <button class="key fn" data-action=")">)</button>
+    <button class="key fn" data-action="square">x²</button>
+    <button class="key fn" data-action="del">⌫</button>
+
+    <!-- Row2: trigonometría + potencia + nota de texto -->
+    <button class="key fn" data-action="sin">sin</button>
+    <button class="key fn" data-action="cos">cos</button>
+    <button class="key fn" data-action="tan">tan</button>
+    <button class="key fn" data-action="pow">x^y</button>
+    <button class="key fn" data-action="txt">✎ Nota</button>
+
+    <!-- Row3: numpad superior + caja de funciones -->
+    <button class="key num" data-action="7">7</button>
+    <button class="key num" data-action="8">8</button>
+    <button class="key num" data-action="9">9</button>
+    <button class="key op" data-action="/">÷</button>
+    <button class="key fn" data-action="fxbox">ƒ(x)</button>
+
+    <!-- Row4 -->
+    <button class="key num" data-action="4">4</button>
+    <button class="key num" data-action="5">5</button>
+    <button class="key num" data-action="6">6</button>
+    <button class="key op" data-action="*">×</button>
+    <button class="key fn" data-action="pi">π</button>
+
+    <!-- Row5: Ans arriba de Enter -->
+    <button class="key num" data-action="1">1</button>
+    <button class="key num" data-action="2">2</button>
+    <button class="key num" data-action="3">3</button>
+    <button class="key op" data-action="-">−</button>
+    <button class="key fn" data-action="ans">Ans</button>
+
+    <!-- Row6: Esc abajo a la izquierda, 0, punto, + de vuelta, Enter -->
+    <button class="key fn" data-action="clear">Esc</button>
+    <button class="key num" data-action="0">0</button>
+    <button class="key num" data-action=".">.</button>
+    <button class="key op" data-action="+">+</button>
+    <button class="key equals" data-action="equals">Enter</button>
+  </div>
+</div>
+
+<!-- Note modal -->
+<div id="notePanel" class="modal-overlay">
+  <div class="modal-box">
+    <h3>Añadir nota al historial</h3>
+    <textarea id="noteInput" placeholder="Escribe un comentario sobre tus cálculos..." rows="4"></textarea>
+    <div class="modal-actions">
+      <button id="noteCancel" class="modal-btn secondary">Cancelar</button>
+      <button id="noteSave" class="modal-btn primary">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Functions box modal -->
+<div id="fxPanel" class="modal-overlay">
+  <div class="modal-box">
+    <h3>Funciones</h3>
+    <div class="fx-grid" id="fxGrid">
+      <button class="fx-item" data-insert="%">%</button>
+      <button class="fx-item" data-action="lgal">L→gal</button>
+      <button class="fx-item" data-action="galtol">gal→L</button>
+      <button class="fx-item" data-action="cmtoin">cm→in</button>
+      <button class="fx-item" data-action="intocm">in→cm</button>
+      <button class="fx-item" data-action="mtoft">m→ft</button>
+      <button class="fx-item" data-action="fttom">ft→m</button>
+    </div>
+    <div class="modal-actions">
+      <button id="fxClose" class="modal-btn secondary">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Menu panel -->
+<div id="menuPanel">
+  <div id="menuBox">
+    <h3>Menú</h3>
+
+    <div class="setting-row">
+      <label>Archivo</label>
+      <div class="file-current">📄 <span id="currentFileLabel">Nuevo archivo</span></div>
+      <div class="file-actions">
+        <button class="seg-btn" id="newFileBtn">🆕 Nuevo</button>
+        <button class="seg-btn" id="openFileBtn">📂 Abrir</button>
+        <button class="seg-btn" id="saveFileBtn">💾 Guardar</button>
+      </div>
+    </div>
+
+    <div class="setting-row">
+      <label>Modo angular (sin, cos, tan)</label>
+      <div class="seg-group">
+        <button class="seg-btn" id="degBtn">Grados (GRD)</button>
+        <button class="seg-btn" id="radBtn">Radianes (RAD)</button>
+      </div>
+    </div>
+    <div class="setting-row">
+      <label>Cantidad de decimales</label>
+      <select id="decimalSelect">
+        <option value="auto">Automático</option>
+        <option value="0">0</option>
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+        <option value="5">5</option>
+        <option value="6">6</option>
+        <option value="7">7</option>
+        <option value="8">8</option>
+        <option value="9">9</option>
+        <option value="10">10</option>
+      </select>
+    </div>
+    <button id="closeMenu">Cerrar</button>
+  </div>
+</div>
+
+<!-- Settings panel -->
+<div id="settingsPanel">
+  <div id="settingsBox">
+    <h3>Configuración</h3>
+
+    <div class="setting-row">
+      <label>Color de acento</label>
+      <div class="color-grid" id="colorGrid"></div>
+    </div>
+
+    <div class="setting-row">
+      <label>Tamaño del resultado: <span id="fontSizeLabel">42px</span></label>
+      <input type="range" id="fontSizeSlider" min="24" max="72" value="42">
+    </div>
+
+    <button id="clearHistBtn">Borrar historial</button>
+    <button id="closeSettings">Cerrar</button>
+  </div>
+</div>
+
+<!-- Save As modal -->
+<div id="saveAsPanel" class="modal-overlay">
+  <div class="modal-box">
+    <h3>Guardar archivo</h3>
+    <input type="text" id="saveAsInput" placeholder="Nombre del archivo" maxlength="60">
+    <div class="modal-actions">
+      <button id="saveAsCancel" class="modal-btn secondary">Cancelar</button>
+      <button id="saveAsConfirm" class="modal-btn primary">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Open file modal -->
+<div id="openFilePanel" class="modal-overlay">
+  <div class="modal-box">
+    <h3>Abrir archivo</h3>
+    <div class="file-list" id="fileListContainer"></div>
+    <div class="modal-actions">
+      <button id="openFileClose" class="modal-btn secondary">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const COLORS = [
+    {name:'morado', accent:'#7c3aed', dark:'#5b21b6'},
+    {name:'azul oscuro', accent:'#1e3a8a', dark:'#172554'},
+    {name:'verde', accent:'#16a34a', dark:'#15803d'},
+    {name:'naranja', accent:'#ea580c', dark:'#c2410c'},
+    {name:'rojo', accent:'#dc2626', dark:'#b91c1c'},
+    {name:'rosa', accent:'#db2777', dark:'#be185d'},
+    {name:'cian', accent:'#0891b2', dark:'#0e7490'},
+    {name:'amarillo', accent:'#ca8a04', dark:'#a16207'},
+    {name:'gris', accent:'#52525b', dark:'#3f3f46'},
+    {name:'indigo', accent:'#4f46e5', dark:'#4338ca'}
+  ];
+
+  let expr = "";
+  let lastAns = 0;
+  let history = [];
+  let fontSize = 42;
+  let accentIndex = 1;
+  let decimalPlaces = 'auto';
+  let angleMode = 'RAD';
+  let currentFile = null; // { id, name, savedAt } | null = "Nuevo archivo"
+
+  const exprEl = document.getElementById('expr');
+  const resultEl = document.getElementById('result');
+  const historyEl = document.getElementById('history');
+
+  // ---- Persistencia con localStorage ----
+  // NOTA: window.storage solo existe dentro del panel de Artifacts de Claude.ai.
+  // Como esta calculadora se usa como archivo HTML independiente en Android,
+  // usamos localStorage del propio navegador, que sí persiste en el dispositivo.
+  const STORAGE_OK = (() => {
+    try{
+      const testKey = '__calc_test__';
+      localStorage.setItem(testKey, '1');
+      localStorage.removeItem(testKey);
+      return true;
+    }catch(e){ return false; }
+  })();
+
+  function storageGet(key){
+    if(!STORAGE_OK) return null;
+    try{
+      const v = localStorage.getItem(key);
+      return v !== null ? v : null;
+    }catch(e){ return null; }
+  }
+  function storageSet(key, value){
+    if(!STORAGE_OK) return false;
+    try{ localStorage.setItem(key, value); return true; }
+    catch(e){ console.error('storage set failed', e); return false; }
+  }
+  function storageDelete(key){
+    if(!STORAGE_OK) return;
+    try{ localStorage.removeItem(key); }catch(e){}
+  }
+
+  // Cada inicio de la calculadora comienza en un "Nuevo archivo" en blanco.
+  // Solo se carga la configuración general (colores, decimales, etc.), nunca el historial.
+  async function loadState(){
+    try{
+      const s = storageGet('calc-settings');
+      if(s){
+        const parsed = JSON.parse(s);
+        fontSize = parsed.fontSize || 42;
+        accentIndex = parsed.accentIndex !== undefined ? parsed.accentIndex : 1;
+        if(parsed.decimalPlaces !== undefined) decimalPlaces = parsed.decimalPlaces;
+        if(parsed.angleMode) angleMode = parsed.angleMode;
+      }
+    }catch(e){}
+    applySettings();
+    updateFileLabel();
+    renderHistory();
+    if(!STORAGE_OK){
+      console.warn('El almacenamiento local no está disponible en este navegador/modo. Los archivos no podrán guardarse de forma permanente.');
+    }
+  }
+
+  async function saveSettings(){
+    storageSet('calc-settings', JSON.stringify({fontSize, accentIndex, decimalPlaces, angleMode}));
+  }
+
+  // ---- File management (índice + contenido por archivo) ----
+  async function loadFilesIndex(){
+    try{
+      const v = storageGet('calc-files-index');
+      return v ? JSON.parse(v) : [];
+    }catch(e){ return []; }
+  }
+  async function saveFilesIndex(idx){
+    storageSet('calc-files-index', JSON.stringify(idx));
+  }
+  async function writeFileContent(id, historyArr){
+    storageSet('calc-file:' + id, JSON.stringify(historyArr));
+  }
+  async function readFileContent(id){
+    try{
+      const v = storageGet('calc-file:' + id);
+      return v ? JSON.parse(v) : [];
+    }catch(e){ return []; }
+  }
+  async function deleteFileContent(id){
+    storageDelete('calc-file:' + id);
+  }
+
+  function updateFileLabel(){
+    const label = currentFile ? currentFile.name : 'Nuevo archivo';
+    document.getElementById('currentFileLabel').textContent = label;
+    document.getElementById('fileNameBadge').textContent = label;
+  }
+
+  // Guarda el historial actual en el archivo abierto (debe existir currentFile)
+  async function persistCurrentFile(){
+    if(!currentFile) return;
+    await writeFileContent(currentFile.id, history);
+    currentFile.savedAt = Date.now();
+    const idx = await loadFilesIndex();
+    const pos = idx.findIndex(f => f.id === currentFile.id);
+    const record = {id: currentFile.id, name: currentFile.name, savedAt: currentFile.savedAt};
+    if(pos >= 0){ idx[pos] = record; } else { idx.push(record); }
+    await saveFilesIndex(idx);
+  }
+
+  // Autoguardado best-effort al cerrar/ocultar la app (solo si el archivo ya tiene nombre)
+  function autoSaveOnClose(){
+    if(!currentFile) return;
+    writeFileContent(currentFile.id, history);
+    loadFilesIndex().then(idx => {
+      const pos = idx.findIndex(f => f.id === currentFile.id);
+      const record = {id: currentFile.id, name: currentFile.name, savedAt: Date.now()};
+      if(pos >= 0){ idx[pos] = record; } else { idx.push(record); }
+      saveFilesIndex(idx);
+    }).catch(() => {});
+  }
+  document.addEventListener('visibilitychange', () => {
+    if(document.hidden) autoSaveOnClose();
+  });
+  window.addEventListener('pagehide', autoSaveOnClose);
+
+  function applySettings(){
+    const c = COLORS[accentIndex];
+    document.documentElement.style.setProperty('--accent', c.accent);
+    document.documentElement.style.setProperty('--accent-dark', c.dark);
+    resultEl.style.fontSize = fontSize + 'px';
+    document.getElementById('fontSizeSlider').value = fontSize;
+    document.getElementById('fontSizeLabel').textContent = fontSize + 'px';
+    document.getElementById('decimalSelect').value = decimalPlaces;
+    document.getElementById('angleBadge').textContent = angleMode === 'DEG' ? 'GRD' : 'RAD';
+    document.getElementById('degBtn').classList.toggle('active', angleMode === 'DEG');
+    document.getElementById('radBtn').classList.toggle('active', angleMode === 'RAD');
+    buildColorGrid();
+  }
+
+  function buildColorGrid(){
+    const grid = document.getElementById('colorGrid');
+    grid.innerHTML = '';
+    COLORS.forEach((c, i) => {
+      const dot = document.createElement('div');
+      dot.className = 'color-dot' + (i === accentIndex ? ' selected' : '');
+      dot.style.background = c.accent;
+      dot.title = c.name;
+      dot.onclick = () => {
+        accentIndex = i;
+        applySettings();
+        saveSettings();
+      };
+      grid.appendChild(dot);
+    });
+  }
+
+  function renderHistory(){
+    historyEl.innerHTML = '';
+    history.forEach(h => {
+      if(h.type === 'note'){
+        const noteDiv = document.createElement('div');
+        noteDiv.className = 'hist-note';
+        noteDiv.textContent = '✎ ' + h.text;
+        historyEl.appendChild(noteDiv);
+        return;
+      }
+
+      const div = document.createElement('div');
+      div.className = 'hist-entry';
+
+      const exprSpan = document.createElement('span');
+      exprSpan.className = 'hist-expr';
+      exprSpan.textContent = h.expr;
+
+      const resSpan = document.createElement('span');
+      resSpan.className = 'hist-res';
+      resSpan.textContent = h.result;
+
+      div.appendChild(exprSpan);
+      div.appendChild(resSpan);
+
+      function flash(){
+        div.classList.add('copied');
+        setTimeout(() => div.classList.remove('copied'), 350);
+        vibrate(10);
+      }
+      function copyToClipboard(text){
+        if(navigator.clipboard && navigator.clipboard.writeText){
+          navigator.clipboard.writeText(text).catch(() => {});
+        }
+      }
+
+      // Tocar la operación: la inserta completa en la línea actual para editarla
+      exprSpan.addEventListener('click', (e) => {
+        e.stopPropagation();
+        expr += h.expr;
+        updateDisplay();
+        copyToClipboard(h.expr);
+        flash();
+      });
+
+      // Tocar el resultado: inserta solo el número para seguir operando
+      resSpan.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const raw = h.raw !== undefined ? h.raw : parseFloat(String(h.result).replace(/,/g, ''));
+        if(isNaN(raw)) return;
+        expr += (raw < 0 ? '(' + raw + ')' : String(raw));
+        updateDisplay();
+        copyToClipboard(h.result);
+        flash();
+      });
+
+      historyEl.appendChild(div);
+    });
+    historyEl.scrollTop = historyEl.scrollHeight;
+  }
+
+  function toEvalExpr(str){
+    let s = str;
+    s = s.replace(/×/g, '*');
+    s = s.replace(/÷/g, '/');
+    s = s.replace(/−/g, '-');
+    s = s.replace(/π/g, 'Math.PI');
+    s = s.replace(/√\(/g, 'SQRT(');
+    s = s.replace(/sin\(/g, 'SIN(');
+    s = s.replace(/cos\(/g, 'COS(');
+    s = s.replace(/tan\(/g, 'TAN(');
+    s = s.replace(/\^/g, '**');
+    s = s.replace(/%/g, '/100');
+    s = s.replace(/Ans/g, '(' + lastAns + ')');
+    return s;
+  }
+
+  function updateDisplay(){
+    exprEl.textContent = expr;
+    if(expr){
+      exprEl.classList.add('typing');
+      resultEl.classList.add('hidden');
+    } else {
+      exprEl.classList.remove('typing');
+      resultEl.classList.remove('hidden');
+    }
+  }
+
+  const OPERATOR_ACTIONS = ['+', '*', '/', 'pow'];
+
+  const GAL_PER_LITER = 0.264172052;
+  const LITERS_PER_GAL = 3.785411784;
+  const CM_PER_IN = 2.54;
+  const M_PER_FT = 0.3048;
+
+  function evaluateExpr(str){
+    const openCount = (str.match(/\(/g) || []).length;
+    const closeCount = (str.match(/\)/g) || []).length;
+    const missing = openCount - closeCount;
+    const exprToEval = missing > 0 ? str + ')'.repeat(missing) : str;
+    const evalStr = toEvalExpr(exprToEval);
+    const toAngle = (x) => angleMode === 'DEG' ? x * Math.PI / 180 : x;
+    const fn = Function('SIN','COS','TAN','SQRT',
+      '"use strict"; return (' + evalStr + ')');
+    const val = fn(
+      (x) => Math.sin(toAngle(x)),
+      (x) => Math.cos(toAngle(x)),
+      (x) => Math.tan(toAngle(x)),
+      Math.sqrt
+    );
+    return { value: Math.round(val * 1e10) / 1e10, exprToEval };
+  }
+
+  // Convierte el valor actual (expresión o último resultado) multiplicándolo
+  // por 'multiplier' y lo registra en el historial con la etiqueta 'label'.
+  function convertAndPush(multiplier, label){
+    try{
+      const source = expr ? expr : String(lastAns);
+      const { value, exprToEval } = evaluateExpr(source);
+      const converted = Math.round(value * multiplier * 1e10) / 1e10;
+      lastAns = converted;
+      resultEl.textContent = formatNumber(converted);
+      history.push({expr: exprToEval + ' ' + label, result: formatNumber(converted), raw: converted});
+      renderHistory();
+      expr = '';
+      updateDisplay();
+    }catch(e){
+      resultEl.textContent = 'Error';
+    }
+  }
+
+  function pressKey(action){
+    if(OPERATOR_ACTIONS.includes(action) && expr === ''){
+      expr = 'Ans';
+    }
+    switch(action){
+      case 'clear':
+        expr = '';
+        resultEl.textContent = '0';
+        updateDisplay();
+        return;
+      case 'del':
+        expr = expr.slice(0, -1);
+        updateDisplay();
+        return;
+      case 'equals': {
+        if(!expr) return;
+        try{
+          const { value, exprToEval } = evaluateExpr(expr);
+          lastAns = value;
+          resultEl.textContent = formatNumber(value);
+          history.push({expr: exprToEval, result: formatNumber(value), raw: value});
+          renderHistory();
+          expr = '';
+          updateDisplay();
+        }catch(e){
+          resultEl.textContent = 'Error';
+        }
+        return;
+      }
+      case 'lgal': convertAndPush(GAL_PER_LITER, 'L→gal'); return;
+      case 'galtol': convertAndPush(LITERS_PER_GAL, 'gal→L'); return;
+      case 'cmtoin': convertAndPush(1 / CM_PER_IN, 'cm→in'); return;
+      case 'intocm': convertAndPush(CM_PER_IN, 'in→cm'); return;
+      case 'mtoft': convertAndPush(1 / M_PER_FT, 'm→ft'); return;
+      case 'fttom': convertAndPush(M_PER_FT, 'ft→m'); return;
+      case 'txt':
+        openNoteModal();
+        return;
+      case 'fxbox':
+        openFxModal();
+        return;
+      case 'sin': expr += 'sin('; break;
+      case 'cos': expr += 'cos('; break;
+      case 'tan': expr += 'tan('; break;
+      case 'sqrt': expr += '√('; break;
+      case 'pow': expr += '^'; break;
+      case 'square': expr += '^2'; break;
+      case 'pi': expr += 'π'; break;
+      case 'ans': expr += 'Ans'; break;
+      case '*': expr += '×'; break;
+      case '/': expr += '÷'; break;
+      default:
+        expr += action;
+    }
+    updateDisplay();
+  }
+
+  function formatNumber(n){
+    if(!isFinite(n)) return 'Error';
+    if(decimalPlaces === 'auto'){
+      return n.toLocaleString('en-US', {maximumFractionDigits: 10});
+    }
+    const d = parseInt(decimalPlaces);
+    return n.toLocaleString('en-US', {minimumFractionDigits: d, maximumFractionDigits: d});
+  }
+
+  function vibrate(ms){
+    if(navigator.vibrate){
+      try{ navigator.vibrate(ms); }catch(e){}
+    }
+  }
+
+  document.getElementById('keypad').addEventListener('click', (e) => {
+    const btn = e.target.closest('.key');
+    if(!btn) return;
+    vibrate(btn.classList.contains('equals') ? 25 : 12);
+    pressKey(btn.dataset.action);
+  });
+
+  document.getElementById('settingsBtn').addEventListener('click', () => {
+    document.getElementById('settingsPanel').classList.add('open');
+  });
+  document.getElementById('closeSettings').addEventListener('click', () => {
+    document.getElementById('settingsPanel').classList.remove('open');
+  });
+  document.getElementById('fontSizeSlider').addEventListener('input', (e) => {
+    fontSize = parseInt(e.target.value);
+    resultEl.style.fontSize = fontSize + 'px';
+    document.getElementById('fontSizeLabel').textContent = fontSize + 'px';
+  });
+  document.getElementById('fontSizeSlider').addEventListener('change', saveSettings);
+
+  document.getElementById('clearHistBtn').addEventListener('click', () => {
+    if(history.length === 0) return;
+    if(!confirm('¿Borrar el historial de la sesión actual? Si el archivo ya fue guardado, esto no afecta la copia guardada hasta que vuelvas a guardar.')) return;
+    history = [];
+    renderHistory();
+  });
+
+  document.getElementById('menuBtn').addEventListener('click', () => {
+    document.getElementById('menuPanel').classList.add('open');
+  });
+  document.getElementById('closeMenu').addEventListener('click', () => {
+    document.getElementById('menuPanel').classList.remove('open');
+  });
+  document.getElementById('degBtn').addEventListener('click', () => {
+    angleMode = 'DEG';
+    applySettings();
+    saveSettings();
+  });
+  document.getElementById('radBtn').addEventListener('click', () => {
+    angleMode = 'RAD';
+    applySettings();
+    saveSettings();
+  });
+  document.getElementById('angleBadge').addEventListener('click', () => {
+    angleMode = angleMode === 'DEG' ? 'RAD' : 'DEG';
+    applySettings();
+    saveSettings();
+    vibrate(12);
+  });
+
+  document.getElementById('decimalSelect').addEventListener('change', (e) => {
+    decimalPlaces = e.target.value;
+    saveSettings();
+    if(history.length){
+      const last = history[history.length - 1];
+      if(!isNaN(lastAns)) resultEl.textContent = formatNumber(lastAns);
+    }
+  });
+
+  // ---- Note modal ----
+  function openNoteModal(){
+    document.getElementById('noteInput').value = '';
+    document.getElementById('notePanel').classList.add('open');
+    document.getElementById('noteInput').focus();
+  }
+  function closeNoteModal(){
+    document.getElementById('notePanel').classList.remove('open');
+  }
+  document.getElementById('noteCancel').addEventListener('click', closeNoteModal);
+  document.getElementById('noteSave').addEventListener('click', () => {
+    const text = document.getElementById('noteInput').value.trim();
+    if(text){
+      history.push({type: 'note', text: text});
+      renderHistory();
+    }
+    closeNoteModal();
+  });
+
+  // ---- Functions box modal ----
+  function openFxModal(){
+    document.getElementById('fxPanel').classList.add('open');
+  }
+  function closeFxModal(){
+    document.getElementById('fxPanel').classList.remove('open');
+  }
+  document.getElementById('fxClose').addEventListener('click', closeFxModal);
+  document.getElementById('fxGrid').addEventListener('click', (e) => {
+    const item = e.target.closest('.fx-item');
+    if(!item) return;
+    const actionVal = item.dataset.action;
+    const insertVal = item.dataset.insert;
+    vibrate(12);
+    closeFxModal();
+    if(actionVal){
+      pressKey(actionVal);
+    } else if(insertVal){
+      expr += insertVal;
+      updateDisplay();
+    }
+  });
+
+  // ---- Nuevo archivo ----
+  document.getElementById('newFileBtn').addEventListener('click', () => {
+    if(history.length > 0 && !confirm('¿Iniciar un archivo nuevo? Los cambios no guardados se perderán.')) return;
+    history = [];
+    currentFile = null;
+    renderHistory();
+    updateFileLabel();
+    vibrate(12);
+  });
+
+  // ---- Guardar ----
+  function flashSaveButton(){
+    const btn = document.getElementById('saveFileBtn');
+    const original = btn.textContent;
+    btn.textContent = '✓ Guardado';
+    setTimeout(() => { btn.textContent = original; }, 1200);
+  }
+  function flashTopSaveBtn(){
+    const btn = document.getElementById('topSaveBtn');
+    btn.textContent = '✓';
+    setTimeout(() => { btn.textContent = '💾'; }, 1000);
+  }
+  async function handleSaveClick(){
+    if(currentFile){
+      await persistCurrentFile();
+      updateFileLabel();
+      flashSaveButton();
+      flashTopSaveBtn();
+      vibrate(12);
+    } else {
+      openSaveAsModal();
+    }
+  }
+  document.getElementById('saveFileBtn').addEventListener('click', handleSaveClick);
+  document.getElementById('topSaveBtn').addEventListener('click', handleSaveClick);
+
+  function openSaveAsModal(){
+    document.getElementById('saveAsInput').value = '';
+    document.getElementById('saveAsPanel').classList.add('open');
+    document.getElementById('saveAsInput').focus();
+  }
+  function closeSaveAsModal(){
+    document.getElementById('saveAsPanel').classList.remove('open');
+  }
+  document.getElementById('saveAsCancel').addEventListener('click', closeSaveAsModal);
+  document.getElementById('saveAsConfirm').addEventListener('click', async () => {
+    const name = document.getElementById('saveAsInput').value.trim();
+    if(!name || name.toLowerCase() === 'nuevo archivo'){
+      document.getElementById('saveAsInput').focus();
+      return;
+    }
+    const id = 'f_' + Date.now();
+    currentFile = {id, name, savedAt: Date.now()};
+    await persistCurrentFile();
+    updateFileLabel();
+    closeSaveAsModal();
+    vibrate(12);
+  });
+
+  // ---- Abrir archivo ----
+  async function openOpenFileModal(){
+    const idx = await loadFilesIndex();
+    const listEl = document.getElementById('fileListContainer');
+    listEl.innerHTML = '';
+    if(idx.length === 0){
+      listEl.innerHTML = '<div class="file-empty">No hay archivos guardados todavía.</div>';
+    } else {
+      idx.slice().sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0)).forEach(f => {
+        const row = document.createElement('div');
+        row.className = 'file-list-item';
+
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'file-list-name';
+        nameSpan.textContent = f.name;
+
+        const dateSpan = document.createElement('span');
+        dateSpan.className = 'file-list-date';
+        dateSpan.textContent = f.savedAt ? new Date(f.savedAt).toLocaleDateString('es', {day:'2-digit', month:'2-digit', year:'2-digit'}) : '';
+
+        const delBtn = document.createElement('button');
+        delBtn.className = 'file-delete-btn';
+        delBtn.textContent = '🗑';
+        delBtn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          if(!confirm('¿Eliminar "' + f.name + '"? Esta acción no se puede deshacer.')) return;
+          await deleteFileContent(f.id);
+          const idx2 = await loadFilesIndex();
+          await saveFilesIndex(idx2.filter(x => x.id !== f.id));
+          if(currentFile && currentFile.id === f.id){
+            currentFile = null;
+            updateFileLabel();
+          }
+          openOpenFileModal();
+          vibrate(12);
+        });
+
+        row.appendChild(nameSpan);
+        row.appendChild(dateSpan);
+        row.appendChild(delBtn);
+
+        row.addEventListener('click', async () => {
+          if(!currentFile && history.length > 0 &&
+             !confirm('Se perderán los cambios no guardados del archivo actual. ¿Abrir de todas formas?')) return;
+          const content = await readFileContent(f.id);
+          history = content;
+          currentFile = {id: f.id, name: f.name, savedAt: f.savedAt};
+          renderHistory();
+          updateFileLabel();
+          closeOpenFileModal();
+          document.getElementById('menuPanel').classList.remove('open');
+          vibrate(12);
+        });
+
+        listEl.appendChild(row);
+      });
+    }
+    document.getElementById('openFilePanel').classList.add('open');
+  }
+  function closeOpenFileModal(){
+    document.getElementById('openFilePanel').classList.remove('open');
+  }
+  document.getElementById('openFileBtn').addEventListener('click', openOpenFileModal);
+  document.getElementById('openFileClose').addEventListener('click', closeOpenFileModal);
+
+  loadState();
+})();
+</script>
+<script>
+  if('serviceWorker' in navigator){
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('service-worker.js').catch(() => {});
+    });
+  }
+</script>
+</body>
+</html>
