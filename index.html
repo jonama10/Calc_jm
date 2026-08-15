@@ -21,17 +21,16 @@
     font-display: swap;
   }
   :root{
-    --accent: #7c3aed;
-    --accent-dark: #5b21b6;
-    --bg: #0d0d10;
-    --screen-bg: #111318;
-    --key-bg: #d9d9dc;
-    --key-text: #111;
-    --key-fn-bg: #1c1e24;
-    --key-fn-text: #e5e5e5;
+    --accent: #7c9a5c;
+    --accent-dark: #5f7a45;
+    --bg: #595b67;
+    --screen-bg: #c1d798;
+    --key-bg: #3d4049;
+    --key-text: #ffffff;
+    --key-fn-bg: #bec2c9;
+    --key-fn-text: #3d4049;
     --marker-font: 'MarkerFont', 'Segoe UI', Arial, sans-serif;
-    --border-on-light: #0a0a0a;
-    --border-on-dark: #dcdce0;
+    --hist-font-size: 16px;
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
   html,body{
@@ -54,9 +53,9 @@
   /* Top bar (2 filas) */
   #topbar{
     display:flex; flex-direction:column;
-    background: linear-gradient(180deg,#1a1a1e,#0e0e11);
-    color:#ccc; font-size:14px;
-    border-bottom: 1px solid #000;
+    background: linear-gradient(180deg,#4d4f5a,#3f414a);
+    color:#e5e6e8; font-size:14px;
+    border-bottom: 1px solid #2f3138;
   }
   #topbarInfo{
     display:flex; align-items:center; justify-content:center; gap:8px;
@@ -79,11 +78,11 @@
   /* Screen */
   #screen{
     background: var(--screen-bg);
-    color:#eee;
+    color:#3d4049;
     flex: 1 1 auto;
     min-height: 0;
     display:flex; flex-direction:column;
-    border-bottom: 2px solid var(--accent);
+    border-bottom: 2px solid var(--accent-dark);
     position:relative;
   }
   #history{
@@ -94,21 +93,21 @@
     gap:2px;
   }
   .hist-entry{
-    display:flex; justify-content:space-between; color:#888;
-    border-bottom: 1px solid #222;
+    display:flex; justify-content:space-between; color:#5c6350;
+    border-bottom: 1px solid rgba(61,64,73,0.15);
     padding: 4px 0;
   }
-  .hist-expr{color:#999; padding: 6px 4px; border-radius: 5px; font-family: var(--marker-font);}
-  .hist-res{color:#ddd; font-weight:500; padding: 6px 4px; border-radius: 5px; font-family: var(--marker-font);}
-  .hist-expr:active{background:#26282f;}
-  .hist-res:active{background:#26282f;}
+  .hist-expr{color:#6b7355; padding: 6px 4px; border-radius: 5px; font-family: var(--marker-font); font-size: var(--hist-font-size);}
+  .hist-res{color:#2f3228; font-weight:600; padding: 6px 4px; border-radius: 5px; font-family: var(--marker-font); font-size: var(--hist-font-size);}
+  .hist-expr:active{background:rgba(61,64,73,0.12);}
+  .hist-res:active{background:rgba(61,64,73,0.12);}
   #currentLine{
     padding: 8px 12px 14px 12px;
-    border-top: 1px solid #222;
+    border-top: 1px solid rgba(61,64,73,0.2);
   }
   #expr{
     width:100%;
-    color:#aaa;
+    color:#6b7355;
     min-height: 22px;
     background:none; border:none; outline:none;
     text-align:right;
@@ -116,14 +115,14 @@
     resize:none; overflow:hidden;
     word-break: break-all; white-space: pre-wrap;
     padding:0; margin:0;
-    caret-color: var(--accent);
+    caret-color: var(--accent-dark);
   }
   #expr.typing{
-    color:#fff;
+    color:#2f3228;
     font-weight:700;
   }
   #result{
-    color:#fff;
+    color:#2f3228;
     font-weight:600;
     line-height:1.1;
     text-align:right;
@@ -201,33 +200,33 @@
   }
 
   /* Keypad: una sola columna de filas, siempre 4 botones de ancho.
-     Ligeramente más alto que 1/3 para que 8 filas quepan con buen tamaño de toque. */
+     Ligeramente más alto que antes y con separación mínima entre botones. */
   #keypad{
-    flex: 0 0 36dvh;
-    height: 36dvh;
+    flex: 0 0 40dvh;
+    height: 40dvh;
     display:flex;
     flex-direction:column;
-    gap: 4px;
+    gap: 2px;
     padding: 6px 6px calc(6px + env(safe-area-inset-bottom)) 6px;
-    background:#0a0a0c;
+    background: var(--bg);
     min-height:0;
   }
   .kp-row{
     flex:1;
     display:flex;
-    gap:4px;
+    gap:2px;
     min-height:0;
   }
   .key{
     background: var(--key-bg);
     color: var(--key-text);
-    border: 3px solid var(--border-on-light);
+    border: none;
     border-radius: 16px;
     font-family: var(--marker-font);
     font-size: 19px;
     display:flex; align-items:center; justify-content:center;
     cursor:pointer;
-    box-shadow: 0 2px 0 rgba(0,0,0,0.3);
+    box-shadow: 0 2px 0 rgba(0,0,0,0.25);
     flex:1;
     min-width:0;
     transition: background-color 0.05s, color 0.05s;
@@ -238,24 +237,21 @@
   }
   .key.fn{
     background: var(--key-fn-bg); color: var(--key-fn-text); font-size:16px;
-    border-color: var(--border-on-dark);
   }
   .key.fn:active{
     background: var(--accent); color:#fff;
   }
   .key.op{
-    background: var(--accent); color:#fff; font-size:22px; font-weight:600;
-    border-color: var(--border-on-dark);
+    background: var(--key-fn-bg); color: var(--key-fn-text); font-size:22px; font-weight:600;
   }
   .key.op:active{
-    background: var(--accent-dark);
+    background: var(--accent); color:#fff;
   }
   .key.equals{
-    background: var(--accent-dark); color:#fff; font-size:22px; font-weight:700;
-    border-color: var(--border-on-dark);
+    background: var(--key-fn-bg); color: var(--key-fn-text); font-size:22px; font-weight:700;
   }
   .key.equals:active{
-    background: var(--accent); 
+    background: var(--accent-dark); color:#fff;
   }
   .key.num{
     font-size: 24px;
@@ -263,7 +259,6 @@
   }
   .key.num:active{
     background: var(--accent); color:#fff;
-    border-color: var(--border-on-dark);
   }
   .key sup{
     font-size: 0.55em;
@@ -325,8 +320,8 @@
 
   /* Note entries inside history */
   .hist-note{
-    color:#8ab4f8; font-style: italic; font-size: 14px;
-    padding: 6px 2px; border-bottom: 1px solid #222;
+    color:#000; font-family: var(--marker-font); font-size: var(--hist-font-size);
+    padding: 6px 2px; border-bottom: 1px solid rgba(61,64,73,0.15);
     white-space: pre-wrap; word-break: break-word;
   }
 
@@ -351,6 +346,107 @@
     padding: 4px 6px; cursor:pointer; line-height:1;
   }
   .file-empty{color:#888; font-size:14px; text-align:center; padding: 16px 0;}
+
+  /* ---- Diseño de Mezcla de Concreto ---- */
+  #mixDesignScreen{
+    display:none;
+    flex-direction:column;
+    height:100%;
+    min-height:0;
+  }
+  #app.mix-active #history,
+  #app.mix-active #currentLine,
+  #app.mix-active #keypad{
+    display:none !important;
+  }
+  #app.mix-active #mixDesignScreen{
+    display:flex;
+  }
+  #app.mix-active #screen{
+    border-bottom: none;
+  }
+  /* Mientras se edita un campo del formulario, el teclado reaparece temporalmente */
+  #app.mix-active.mix-editing #keypad{
+    display:flex !important;
+  }
+  .mix-row input[type="text"]:focus{
+    background: rgba(255,255,255,0.6);
+    outline: 2px solid var(--accent-dark);
+  }
+  .mix-topbar{
+    display:flex; align-items:center; gap:10px;
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(61,64,73,0.25);
+    flex-shrink:0;
+  }
+  #mixBackBtn{
+    background: var(--accent-dark); color:#fff; border:none;
+    padding: 8px 12px; border-radius: 10px; font-size:13px; cursor:pointer;
+    font-family: 'Segoe UI', Arial, sans-serif;
+  }
+  .mix-title{
+    font-family: var(--marker-font); font-size:17px; color:#2f3228; font-weight:600;
+  }
+  .mix-sheet{
+    flex:1; overflow-y:auto; padding: 10px 14px 24px 14px;
+  }
+  .mix-section{
+    margin-bottom: 16px;
+    padding-bottom: 10px;
+    border-bottom: 1px dashed rgba(61,64,73,0.3);
+  }
+  .mix-section h4{
+    margin: 0 0 8px 0; color:#2f3228; font-size:15px;
+    font-family: 'Segoe UI', Arial, sans-serif; font-weight:700;
+  }
+  .mix-hint{
+    margin: 0 0 8px 0; font-size:11.5px; color:#5c6350;
+    font-family: 'Segoe UI', Arial, sans-serif; line-height:1.35;
+  }
+  .mix-row{
+    display:flex; align-items:center; justify-content:space-between;
+    gap: 10px; padding: 6px 0;
+  }
+  .mix-row label{
+    flex: 1.3; font-size:13px; color:#3d4049;
+    font-family: 'Segoe UI', Arial, sans-serif;
+  }
+  .mix-row input[type="text"], .mix-row select{
+    flex: 1; min-width:0;
+    background: rgba(255,255,255,0.35);
+    border: none; border-bottom: 2px solid rgba(61,64,73,0.4);
+    border-radius: 4px 4px 0 0;
+    padding: 6px 8px;
+    font-family: var(--marker-font); font-size:16px; color:#2f3228;
+    text-align:right;
+  }
+  .mix-row select{ text-align:left; font-family: 'Segoe UI', Arial, sans-serif; font-size:13px; }
+  .mix-row input.assumed{
+    color:#c0392b; font-weight:700;
+  }
+  .mix-air-btn{font-size:12px; padding:8px 4px;}
+  .mix-calc-btn{
+    width:100%; padding: 14px; margin-top: 6px;
+    background: var(--accent-dark); color:#fff; border:none; border-radius: 12px;
+    font-size:16px; font-weight:700; cursor:pointer;
+    font-family: 'Segoe UI', Arial, sans-serif;
+  }
+  .mix-calc-btn:active{ background: var(--accent); }
+  .mix-results{ margin-top: 16px; }
+  .mix-results h4{
+    color:#2f3228; font-size:15px; margin: 14px 0 8px 0;
+    font-family: 'Segoe UI', Arial, sans-serif; font-weight:700;
+    border-top: 2px solid rgba(61,64,73,0.3); padding-top:10px;
+  }
+  .mix-result-row{
+    display:flex; justify-content:space-between; padding: 4px 0;
+    font-family: var(--marker-font); font-size:15px; color:#2f3228;
+  }
+  .mix-result-row .rlabel{ color:#5c6350; font-family:'Segoe UI', Arial, sans-serif; font-size:12.5px; }
+  .mix-note{
+    font-size:11px; color:#5c6350; margin-top:10px; line-height:1.4;
+    font-family: 'Segoe UI', Arial, sans-serif;
+  }
 </style>
 </head>
 <body>
@@ -376,6 +472,97 @@
     <div id="currentLine">
       <textarea id="expr" rows="1" inputmode="none" autocomplete="off" autocorrect="off" spellcheck="false"></textarea>
       <div id="result">0</div>
+    </div>
+
+    <div id="mixDesignScreen">
+      <div class="mix-topbar">
+        <button id="mixBackBtn">← Calculadora</button>
+        <span class="mix-title">Diseño de Mezcla ACI 211.1</span>
+      </div>
+
+      <div class="mix-sheet" id="mixSheet">
+
+        <div class="mix-section">
+          <h4>1. Datos de diseño</h4>
+          <div class="mix-row">
+            <label>f'c (kg/cm²)</label>
+            <input type="text" inputmode="none" readonly id="mixFc" placeholder="Ej: 210">
+          </div>
+          <div class="mix-row">
+            <label>Asentamiento (slump)</label>
+            <select id="mixSlump">
+              <option value="25-50">Bajo: 25-50 mm (1"-2")</option>
+              <option value="75-100" selected>Medio: 75-100 mm (3"-4")</option>
+              <option value="150-175">Alto: 150-175 mm (6"-7")</option>
+            </select>
+          </div>
+          <div class="mix-row">
+            <label>Tamaño máx. nominal (TMN)</label>
+            <select id="mixTmn">
+              <option value="9.5">3/8" (9.5 mm)</option>
+              <option value="12.5">1/2" (12.5 mm)</option>
+              <option value="19" selected>3/4" (19 mm)</option>
+              <option value="25">1" (25 mm)</option>
+              <option value="37.5">1 1/2" (37.5 mm)</option>
+              <option value="50">2" (50 mm)</option>
+              <option value="75">3" (75 mm)</option>
+              <option value="150">6" (150 mm)</option>
+            </select>
+          </div>
+          <div class="mix-row">
+            <label>Exposición / durabilidad</label>
+            <select id="mixExposicion">
+              <option value="leve" selected>Leve</option>
+              <option value="moderada">Moderada (sulfatos/humedad)</option>
+              <option value="severa">Severa</option>
+            </select>
+          </div>
+          <div class="mix-row">
+            <label>Tipo de aire</label>
+            <div class="seg-group">
+              <button class="seg-btn mix-air-btn active" data-air="0">Sin incorporar</button>
+              <button class="seg-btn mix-air-btn" data-air="1">Con aire incorporado</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="mix-section">
+          <h4>2. Cemento</h4>
+          <div class="mix-row">
+            <label>Peso por bolsa (kg)</label>
+            <input type="text" inputmode="none" readonly id="mixPesoBolsa" value="42.5">
+          </div>
+          <div class="mix-row">
+            <label>Peso específico cemento (g/cm³)</label>
+            <input type="text" inputmode="none" readonly id="mixPeCemento" value="3.15">
+          </div>
+        </div>
+
+        <div class="mix-section">
+          <h4>3. Agregado fino (arena)</h4>
+          <p class="mix-hint">Si no tienes el dato de laboratorio, deja el "." — se usará un valor típico marcado en rojo.</p>
+          <div class="mix-row"><label>Peso específico (g/cm³)</label><input type="text" inputmode="none" readonly id="mixPeFino" value="."></div>
+          <div class="mix-row"><label>P.U. suelto (kg/m³)</label><input type="text" inputmode="none" readonly id="mixPusFino" value="."></div>
+          <div class="mix-row"><label>Contenido de humedad (%)</label><input type="text" inputmode="none" readonly id="mixHumFino" value="."></div>
+          <div class="mix-row"><label>Absorción (%)</label><input type="text" inputmode="none" readonly id="mixAbsFino" value="."></div>
+          <div class="mix-row"><label>Módulo de fineza</label><input type="text" inputmode="none" readonly id="mixMfFino" value="."></div>
+        </div>
+
+        <div class="mix-section">
+          <h4>4. Agregado grueso (piedra)</h4>
+          <p class="mix-hint">Igual que arriba: "." usa un valor típico (en rojo) si no tienes el dato real.</p>
+          <div class="mix-row"><label>Peso específico (g/cm³)</label><input type="text" inputmode="none" readonly id="mixPeGrueso" value="."></div>
+          <div class="mix-row"><label>P.U. suelto (kg/m³)</label><input type="text" inputmode="none" readonly id="mixPusGrueso" value="."></div>
+          <div class="mix-row"><label>P.U. compactado (kg/m³)</label><input type="text" inputmode="none" readonly id="mixPucGrueso" value="."></div>
+          <div class="mix-row"><label>Contenido de humedad (%)</label><input type="text" inputmode="none" readonly id="mixHumGrueso" value="."></div>
+          <div class="mix-row"><label>Absorción (%)</label><input type="text" inputmode="none" readonly id="mixAbsGrueso" value="."></div>
+        </div>
+
+        <button id="mixCalcBtn" class="mix-calc-btn">Calcular diseño de mezcla</button>
+
+        <div id="mixResults" class="mix-results"></div>
+
+      </div>
     </div>
   </div>
 
@@ -419,7 +606,7 @@
     <div class="kp-row">
       <button class="key fn" data-action="clear">Esc</button>
       <button class="key num" data-action="0">0</button>
-      <button class="key num" data-action=".">.</button>
+      <button class="key fn" data-action=".">.</button>
       <button class="key equals" data-action="equals">⏎</button>
     </div>
   </div>
@@ -449,6 +636,9 @@
       <button class="fx-item" data-action="intocm">in→cm</button>
       <button class="fx-item" data-action="mtoft">m→ft</button>
       <button class="fx-item" data-action="fttom">ft→m</button>
+    </div>
+    <div class="modal-actions" style="margin-top:14px;">
+      <button id="openMixDesignBtn" class="modal-btn primary" style="width:100%;">🧱 Diseño de Mezcla de Concreto</button>
     </div>
     <div class="modal-actions">
       <button id="fxClose" class="modal-btn secondary">Cerrar</button>
@@ -577,11 +767,11 @@
 
   // 5 niveles de tamaño: el nivel 3 conserva el tamaño anterior por defecto (42/20px)
   const FONT_SIZE_LEVELS = {
-    1: { result: 26, expr: 13 },
-    2: { result: 34, expr: 16 },
-    3: { result: 42, expr: 20 },
-    4: { result: 50, expr: 24 },
-    5: { result: 58, expr: 28 },
+    1: { result: 26, expr: 13, hist: 12 },
+    2: { result: 34, expr: 16, hist: 14 },
+    3: { result: 42, expr: 20, hist: 16 },
+    4: { result: 50, expr: 24, hist: 18 },
+    5: { result: 58, expr: 28, hist: 20 },
   };
 
   let lastAns = 0;
@@ -680,10 +870,10 @@
     document.getElementById('fileNameBadge').textContent = label;
   }
 
-  // Guarda el historial actual en el archivo abierto (debe existir currentFile)
+  // Guarda el historial actual (y el diseño de mezcla, si hay uno) en el archivo abierto
   async function persistCurrentFile(){
     if(!currentFile) return;
-    await writeFileContent(currentFile.id, history);
+    await writeFileContent(currentFile.id, { history, mixDesign: mixDesignData });
     currentFile.savedAt = Date.now();
     const idx = await loadFilesIndex();
     const pos = idx.findIndex(f => f.id === currentFile.id);
@@ -695,7 +885,7 @@
   // Autoguardado best-effort al cerrar/ocultar la app (solo si el archivo ya tiene nombre)
   function autoSaveOnClose(){
     if(!currentFile) return;
-    writeFileContent(currentFile.id, history);
+    writeFileContent(currentFile.id, { history, mixDesign: mixDesignData });
     loadFilesIndex().then(idx => {
       const pos = idx.findIndex(f => f.id === currentFile.id);
       const record = {id: currentFile.id, name: currentFile.name, savedAt: Date.now()};
@@ -715,6 +905,7 @@
     const level = FONT_SIZE_LEVELS[fontSizeLevel] || FONT_SIZE_LEVELS[3];
     resultEl.style.fontSize = level.result + 'px';
     exprEl.style.fontSize = level.expr + 'px';
+    document.documentElement.style.setProperty('--hist-font-size', level.hist + 'px');
     document.querySelectorAll('#fontSizeGroup .size-btn').forEach(btn => {
       btn.classList.toggle('active', parseInt(btn.dataset.level) === fontSizeLevel);
     });
@@ -866,6 +1057,343 @@
   const CM_PER_IN = 2.54;
   const M_PER_FT = 0.3048;
 
+  // ============================================================
+  // ---- Diseño de Mezcla de Concreto (Método ACI 211.1) ----
+  // ============================================================
+  let mixMode = false;
+  let mixDesignData = null; // { inputs, results } | null — se guarda con el archivo
+
+  const MIX_WATER_TABLE = {
+    sin_aire: {
+      '25-50':   {9.5:207, 12.5:199, 19:190, 25:179, 37.5:166, 50:154, 75:130, 150:113},
+      '75-100':  {9.5:228, 12.5:216, 19:205, 25:193, 37.5:181, 50:169, 75:145, 150:124},
+      '150-175': {9.5:243, 12.5:228, 19:216, 25:202, 37.5:190, 50:178, 75:160, 150:160},
+    },
+    con_aire: {
+      '25-50':   {9.5:181, 12.5:175, 19:168, 25:160, 37.5:150, 50:142, 75:122, 150:107},
+      '75-100':  {9.5:202, 12.5:193, 19:184, 25:175, 37.5:165, 50:157, 75:133, 150:119},
+      '150-175': {9.5:216, 12.5:205, 19:197, 25:184, 37.5:174, 50:166, 75:154, 150:154},
+    }
+  };
+  const MIX_AIR_ATRAPADO = {9.5:3.0, 12.5:2.5, 19:2.0, 25:1.5, 37.5:1.0, 50:0.5, 75:0.3, 150:0.2};
+  const MIX_AIR_INCORPORADO = {
+    leve:     {9.5:4.5, 12.5:4.0, 19:3.5, 25:3.0, 37.5:2.5, 50:2.0, 75:1.5, 150:1.0},
+    moderada: {9.5:6.0, 12.5:5.5, 19:5.0, 25:4.5, 37.5:4.5, 50:4.0, 75:3.5, 150:3.0},
+    severa:   {9.5:7.5, 12.5:7.0, 19:6.0, 25:6.0, 37.5:5.5, 50:5.0, 75:4.5, 150:4.0},
+  };
+  const MIX_AC_TABLE_SIN_AIRE = [
+    {fcr:150, ac:0.80}, {fcr:200, ac:0.70}, {fcr:250, ac:0.62},
+    {fcr:300, ac:0.55}, {fcr:350, ac:0.48}, {fcr:400, ac:0.43}, {fcr:450, ac:0.38},
+  ];
+  const MIX_AC_TABLE_CON_AIRE = [
+    {fcr:150, ac:0.71}, {fcr:200, ac:0.61}, {fcr:250, ac:0.53},
+    {fcr:300, ac:0.46}, {fcr:350, ac:0.40},
+  ];
+  const MIX_AC_MAX_EXPOSICION = { leve: 0.60, moderada: 0.50, severa: 0.45 };
+  const MIX_BBO_TABLE = {
+    9.5:  {2.40:0.50, 2.60:0.48, 2.80:0.46, 3.00:0.44},
+    12.5: {2.40:0.59, 2.60:0.57, 2.80:0.55, 3.00:0.53},
+    19:   {2.40:0.66, 2.60:0.64, 2.80:0.62, 3.00:0.60},
+    25:   {2.40:0.71, 2.60:0.69, 2.80:0.67, 3.00:0.65},
+    37.5: {2.40:0.75, 2.60:0.73, 2.80:0.71, 3.00:0.69},
+    50:   {2.40:0.78, 2.60:0.76, 2.80:0.74, 3.00:0.72},
+    75:   {2.40:0.82, 2.60:0.80, 2.80:0.78, 3.00:0.76},
+    150:  {2.40:0.87, 2.60:0.85, 2.80:0.83, 3.00:0.81},
+  };
+  // Valores típicos usados cuando el campo se deja en "."
+  const MIX_DEFAULTS = {
+    peFino: 2.65, pusFino: 1450, humFino: 5, absFino: 1, mfFino: 2.80,
+    peGrueso: 2.70, pusGrueso: 1500, pucGrueso: 1550, humGrueso: 1, absGrueso: 1,
+  };
+
+  function mixInterpolate(points, x, keyX, keyY){
+    const sorted = [...points].sort((a,b) => a[keyX] - b[keyX]);
+    if(x <= sorted[0][keyX]) return sorted[0][keyY];
+    if(x >= sorted[sorted.length-1][keyX]) return sorted[sorted.length-1][keyY];
+    for(let i=0; i<sorted.length-1; i++){
+      const p1 = sorted[i], p2 = sorted[i+1];
+      if(x >= p1[keyX] && x <= p2[keyX]){
+        const t = (x - p1[keyX]) / (p2[keyX] - p1[keyX]);
+        return p1[keyY] + t * (p2[keyY] - p1[keyY]);
+      }
+    }
+    return sorted[sorted.length-1][keyY];
+  }
+  function mixInterpolateBbo(tmn, mf){
+    const row = MIX_BBO_TABLE[tmn];
+    const mfPoints = Object.keys(row).map(k => ({mf: parseFloat(k), val: row[k]}));
+    return mixInterpolate(mfPoints, mf, 'mf', 'val');
+  }
+  function mixMargenResistencia(fc){
+    if(fc < 210) return fc + 70;
+    if(fc <= 350) return fc + 84;
+    return fc + 98;
+  }
+
+  function calcularMezcla(input){
+    const {
+      fc, slumpRange, tmn, conAire, exposicion,
+      pesoBolsa, peCemento,
+      peFino, pusFino, humFino, absFino, mfFino,
+      peGrueso, pusGrueso, pucGrueso, humGrueso, absGrueso
+    } = input;
+
+    const fcr = mixMargenResistencia(fc);
+    const tablaAgua = conAire ? MIX_WATER_TABLE.con_aire : MIX_WATER_TABLE.sin_aire;
+    const agua = tablaAgua[slumpRange][tmn];
+    const aire = conAire ? MIX_AIR_INCORPORADO[exposicion][tmn] : MIX_AIR_ATRAPADO[tmn];
+
+    const tablaAC = conAire ? MIX_AC_TABLE_CON_AIRE : MIX_AC_TABLE_SIN_AIRE;
+    let ac = mixInterpolate(tablaAC, fcr, 'fcr', 'ac');
+    const acMax = MIX_AC_MAX_EXPOSICION[exposicion];
+    if(acMax !== undefined) ac = Math.min(ac, acMax);
+
+    const cemento = agua / ac;
+    const bolsas = cemento / pesoBolsa;
+
+    const bbo = mixInterpolateBbo(tmn, mfFino);
+    const pesoGruesoSeco = bbo * pucGrueso;
+
+    const volCemento = cemento / (peCemento * 1000);
+    const volAgua = agua / 1000;
+    const volAire = aire / 100;
+    const volGrueso = pesoGruesoSeco / (peGrueso * 1000);
+    const volFino = 1 - (volCemento + volAgua + volAire + volGrueso);
+    const pesoFinoSeco = volFino * peFino * 1000;
+
+    const pesoFinoHumedo = pesoFinoSeco * (1 + humFino/100);
+    const pesoGruesoHumedo = pesoGruesoSeco * (1 + humGrueso/100);
+    const humSupFino = humFino - absFino;
+    const humSupGrueso = humGrueso - absGrueso;
+    const aguaEfectiva = agua - (pesoFinoSeco*humSupFino/100) - (pesoGruesoSeco*humSupGrueso/100);
+
+    const factor = pesoBolsa / cemento;
+    const finoHumedoPorBolsa = pesoFinoHumedo * factor;
+    const gruesoHumedoPorBolsa = pesoGruesoHumedo * factor;
+    const aguaPorBolsa = aguaEfectiva * factor;
+    const volFinoPorBolsaL = (finoHumedoPorBolsa / pusFino) * 1000;
+    const volGruesoPorBolsaL = (gruesoHumedoPorBolsa / pusGrueso) * 1000;
+
+    return {
+      fcr, agua, aire, ac, cemento, bolsas, bbo, pesoGruesoSeco, pesoFinoSeco,
+      pesoFinoHumedo, pesoGruesoHumedo, aguaEfectiva,
+      finoHumedoPorBolsa, gruesoHumedoPorBolsa, aguaPorBolsa,
+      volFinoPorBolsaL, volGruesoPorBolsaL
+    };
+  }
+
+  // Lee un campo del formulario; si está en "." (o vacío/no numérico) usa el valor
+  // típico y marca el campo en rojo para dejar claro que es un supuesto, no un dato real.
+  function mixReadField(id, defaultVal){
+    const el = document.getElementById(id);
+    const raw = el.value.trim();
+    if(raw === '.' || raw === '' || isNaN(parseFloat(raw))){
+      el.value = defaultVal;
+      el.classList.add('assumed');
+      return defaultVal;
+    }
+    el.classList.remove('assumed');
+    return parseFloat(raw);
+  }
+
+  function mixCollectInputs(){
+    return {
+      fc: parseFloat(document.getElementById('mixFc').value),
+      slumpRange: document.getElementById('mixSlump').value,
+      tmn: parseFloat(document.getElementById('mixTmn').value),
+      conAire: document.querySelector('.mix-air-btn.active').dataset.air === '1',
+      exposicion: document.getElementById('mixExposicion').value,
+      pesoBolsa: parseFloat(document.getElementById('mixPesoBolsa').value) || 42.5,
+      peCemento: parseFloat(document.getElementById('mixPeCemento').value) || 3.15,
+      peFino: mixReadField('mixPeFino', MIX_DEFAULTS.peFino),
+      pusFino: mixReadField('mixPusFino', MIX_DEFAULTS.pusFino),
+      humFino: mixReadField('mixHumFino', MIX_DEFAULTS.humFino),
+      absFino: mixReadField('mixAbsFino', MIX_DEFAULTS.absFino),
+      mfFino: mixReadField('mixMfFino', MIX_DEFAULTS.mfFino),
+      peGrueso: mixReadField('mixPeGrueso', MIX_DEFAULTS.peGrueso),
+      pusGrueso: mixReadField('mixPusGrueso', MIX_DEFAULTS.pusGrueso),
+      pucGrueso: mixReadField('mixPucGrueso', MIX_DEFAULTS.pucGrueso),
+      humGrueso: mixReadField('mixHumGrueso', MIX_DEFAULTS.humGrueso),
+      absGrueso: mixReadField('mixAbsGrueso', MIX_DEFAULTS.absGrueso),
+    };
+  }
+
+  function mixFmt(n, dec){
+    if(!isFinite(n)) return '—';
+    return n.toLocaleString('en-US', {minimumFractionDigits: dec, maximumFractionDigits: dec});
+  }
+
+  function renderMixResults(input, r){
+    const box = document.getElementById('mixResults');
+    box.innerHTML = `
+      <h4>Resumen del diseño</h4>
+      <div class="mix-result-row"><span class="rlabel">f'cr (resistencia promedio)</span><span>${mixFmt(r.fcr,0)} kg/cm²</span></div>
+      <div class="mix-result-row"><span class="rlabel">Relación agua/cemento</span><span>${mixFmt(r.ac,3)}</span></div>
+      <div class="mix-result-row"><span class="rlabel">Aire (${input.conAire?'incorporado':'atrapado'})</span><span>${mixFmt(r.aire,1)} %</span></div>
+
+      <h4>Por m³ de concreto (base seca)</h4>
+      <div class="mix-result-row"><span class="rlabel">Agua de diseño</span><span>${mixFmt(r.agua,0)} L</span></div>
+      <div class="mix-result-row"><span class="rlabel">Cemento</span><span>${mixFmt(r.cemento,1)} kg (${mixFmt(r.bolsas,2)} bolsas)</span></div>
+      <div class="mix-result-row"><span class="rlabel">Agregado fino seco</span><span>${mixFmt(r.pesoFinoSeco,1)} kg</span></div>
+      <div class="mix-result-row"><span class="rlabel">Agregado grueso seco</span><span>${mixFmt(r.pesoGruesoSeco,1)} kg</span></div>
+
+      <h4>Corregido para campo (con humedad real)</h4>
+      <div class="mix-result-row"><span class="rlabel">Agua efectiva de mezclado</span><span>${mixFmt(r.aguaEfectiva,1)} L</span></div>
+      <div class="mix-result-row"><span class="rlabel">Agregado fino húmedo</span><span>${mixFmt(r.pesoFinoHumedo,1)} kg</span></div>
+      <div class="mix-result-row"><span class="rlabel">Agregado grueso húmedo</span><span>${mixFmt(r.pesoGruesoHumedo,1)} kg</span></div>
+
+      <h4>Por bolsa de cemento (volumen) — para tanda de obra</h4>
+      <div class="mix-result-row"><span class="rlabel">Agua</span><span>${mixFmt(r.aguaPorBolsa,1)} L</span></div>
+      <div class="mix-result-row"><span class="rlabel">Agregado fino húmedo</span><span>${mixFmt(r.finoHumedoPorBolsa,1)} kg → ${mixFmt(r.volFinoPorBolsaL,1)} L</span></div>
+      <div class="mix-result-row"><span class="rlabel">Agregado grueso húmedo</span><span>${mixFmt(r.gruesoHumedoPorBolsa,1)} kg → ${mixFmt(r.volGruesoPorBolsaL,1)} L</span></div>
+
+      <p class="mix-note">Proporción aproximada 1 : ${mixFmt(r.finoHumedoPorBolsa/input.pesoBolsa,2)} : ${mixFmt(r.gruesoHumedoPorBolsa/input.pesoBolsa,2)} (cemento : arena húmeda : piedra húmeda, en peso) — Método ACI 211.1, tal como se aplica en la práctica peruana. Los valores en rojo son supuestos típicos, no datos de laboratorio: verifica en campo antes de usar en obra.</p>
+    `;
+  }
+
+  async function runMixCalculation(){
+    const fcEl = document.getElementById('mixFc');
+    if(!fcEl.value.trim() || isNaN(parseFloat(fcEl.value))){
+      await showConfirm("Ingresa un valor válido de f'c para poder calcular.", true);
+      fcEl.focus();
+      return;
+    }
+    const input = mixCollectInputs();
+    const r = calcularMezcla(input);
+    renderMixResults(input, r);
+    mixDesignData = { inputs: input, results: r };
+    vibrate(15);
+  }
+
+  function resetMixDesignUI(){
+    document.getElementById('mixFc').value = '';
+    document.getElementById('mixSlump').value = '75-100';
+    document.getElementById('mixTmn').value = '19';
+    document.getElementById('mixExposicion').value = 'leve';
+    document.querySelectorAll('.mix-air-btn').forEach((b,i) => b.classList.toggle('active', i===0));
+    document.getElementById('mixPesoBolsa').value = '42.5';
+    document.getElementById('mixPeCemento').value = '3.15';
+    ['mixPeFino','mixPusFino','mixHumFino','mixAbsFino','mixMfFino',
+     'mixPeGrueso','mixPusGrueso','mixPucGrueso','mixHumGrueso','mixAbsGrueso'].forEach(id => {
+      const el = document.getElementById(id);
+      el.value = '.';
+      el.classList.remove('assumed');
+    });
+    document.getElementById('mixResults').innerHTML = '';
+    mixDesignData = null;
+  }
+
+  function restoreMixDesignUI(data){
+    if(!data || !data.inputs) return;
+    const inp = data.inputs;
+    document.getElementById('mixFc').value = inp.fc;
+    document.getElementById('mixSlump').value = inp.slumpRange;
+    document.getElementById('mixTmn').value = String(inp.tmn);
+    document.getElementById('mixExposicion').value = inp.exposicion;
+    document.querySelectorAll('.mix-air-btn').forEach(b =>
+      b.classList.toggle('active', (b.dataset.air === '1') === !!inp.conAire));
+    document.getElementById('mixPesoBolsa').value = inp.pesoBolsa;
+    document.getElementById('mixPeCemento').value = inp.peCemento;
+    document.getElementById('mixPeFino').value = inp.peFino;
+    document.getElementById('mixPusFino').value = inp.pusFino;
+    document.getElementById('mixHumFino').value = inp.humFino;
+    document.getElementById('mixAbsFino').value = inp.absFino;
+    document.getElementById('mixMfFino').value = inp.mfFino;
+    document.getElementById('mixPeGrueso').value = inp.peGrueso;
+    document.getElementById('mixPusGrueso').value = inp.pusGrueso;
+    document.getElementById('mixPucGrueso').value = inp.pucGrueso;
+    document.getElementById('mixHumGrueso').value = inp.humGrueso;
+    document.getElementById('mixAbsGrueso').value = inp.absGrueso;
+    if(data.results) renderMixResults(inp, data.results);
+    mixDesignData = data;
+  }
+
+  function openMixDesign(){
+    mixMode = true;
+    document.getElementById('app').classList.add('mix-active');
+    document.getElementById('fxPanel').classList.remove('open');
+  }
+  function closeMixDesign(){
+    mixMode = false;
+    document.getElementById('app').classList.remove('mix-active');
+    document.getElementById('app').classList.remove('mix-editing');
+    activeMixField = null;
+  }
+
+  // ---- Edición de campos del formulario de mezcla usando el teclado de la calculadora ----
+  let activeMixField = null;
+
+  function mixFieldInsert(char){
+    if(!activeMixField) return;
+    const el = activeMixField;
+    const start = el.selectionStart != null ? el.selectionStart : el.value.length;
+    const end = el.selectionEnd != null ? el.selectionEnd : start;
+    const val = el.value;
+    el.value = val.slice(0, start) + char + val.slice(end);
+    const pos = start + char.length;
+    el.setSelectionRange(pos, pos);
+  }
+  function mixFieldBackspace(){
+    if(!activeMixField) return;
+    const el = activeMixField;
+    const start = el.selectionStart != null ? el.selectionStart : el.value.length;
+    const end = el.selectionEnd != null ? el.selectionEnd : start;
+    const val = el.value;
+    if(start !== end){
+      el.value = val.slice(0, start) + val.slice(end);
+      el.setSelectionRange(start, start);
+    } else if(start > 0){
+      el.value = val.slice(0, start - 1) + val.slice(start);
+      el.setSelectionRange(start - 1, start - 1);
+    }
+  }
+  function mixFieldClearAll(){
+    if(!activeMixField) return;
+    activeMixField.value = '';
+    activeMixField.setSelectionRange(0, 0);
+  }
+  function confirmMixField(){
+    if(!activeMixField) return;
+    activeMixField.blur();
+  }
+  // Solo permite digitos, punto decimal y signo negativo; ignora funciones/operadores
+  // matemáticos que no tienen sentido para un valor de laboratorio simple.
+  function handleMixKeypadPress(action){
+    if(!activeMixField) return;
+    switch(action){
+      case 'equals': confirmMixField(); return;
+      case 'clear': mixFieldClearAll(); return;
+      case 'del': mixFieldBackspace(); return;
+      case '.': mixFieldInsert('.'); return;
+      case '-':
+        if(activeMixField.value === ''){ mixFieldInsert('-'); }
+        return;
+      default:
+        if(/^[0-9]$/.test(action)) mixFieldInsert(action);
+        return;
+    }
+  }
+
+  // Conecta el foco/desenfoque de cada campo numérico del formulario con el teclado
+  document.querySelectorAll('.mix-row input[type="text"]').forEach(input => {
+    input.addEventListener('focus', () => {
+      activeMixField = input;
+      document.getElementById('app').classList.add('mix-editing');
+      if(input.value.trim() === '.'){
+        input.value = '';
+      }
+      input.classList.remove('assumed');
+    });
+    input.addEventListener('blur', () => {
+      if(input.value.trim() === ''){
+        // El campo "f'c" no tiene punto por defecto: se deja vacío (es obligatorio).
+        if(input.id !== 'mixFc') input.value = '.';
+      }
+      document.getElementById('app').classList.remove('mix-editing');
+      if(activeMixField === input) activeMixField = null;
+    });
+  });
+
   function evaluateExpr(str){
     const openCount = (str.match(/\(/g) || []).length;
     const closeCount = (str.match(/\)/g) || []).length;
@@ -1008,7 +1536,11 @@
     const btn = e.target.closest('.key');
     if(!btn) return;
     vibrate(btn.classList.contains('equals') ? 25 : 12);
-    pressKey(btn.dataset.action);
+    if(activeMixField){
+      handleMixKeypadPress(btn.dataset.action);
+    } else {
+      pressKey(btn.dataset.action);
+    }
   });
 
   document.getElementById('settingsBtn').addEventListener('click', () => {
@@ -1028,14 +1560,17 @@
 
   // Reemplaza confirm() nativo (poco fiable en apps PWA/standalone en Android)
   // por un modal propio. Devuelve una Promise<boolean>.
-  function showConfirm(message){
+  // Si alertOnly=true, oculta el botón Cancelar (funciona como un simple aviso).
+  function showConfirm(message, alertOnly){
     return new Promise((resolve) => {
       document.getElementById('confirmMessage').textContent = message;
       document.getElementById('confirmPanel').classList.add('open');
       const okBtn = document.getElementById('confirmOk');
       const cancelBtn = document.getElementById('confirmCancel');
+      cancelBtn.style.display = alertOnly ? 'none' : '';
       function cleanup(result){
         document.getElementById('confirmPanel').classList.remove('open');
+        cancelBtn.style.display = '';
         okBtn.removeEventListener('click', onOk);
         cancelBtn.removeEventListener('click', onCancel);
         resolve(result);
@@ -1052,6 +1587,8 @@
     const ok = await showConfirm('¿Borrar el historial de la sesión actual? Si el archivo ya fue guardado, esto no afecta la copia guardada hasta que vuelvas a guardar.');
     if(!ok) return;
     history = [];
+    lastAns = 0;
+    resultEl.textContent = '0';
     renderHistory();
   }
   document.getElementById('clearHistBtn').addEventListener('click', clearCurrentHistory);
@@ -1134,14 +1671,34 @@
     }
   });
 
+  // ---- Diseño de Mezcla de Concreto ----
+  document.getElementById('openMixDesignBtn').addEventListener('click', () => {
+    openMixDesign();
+    vibrate(12);
+  });
+  document.getElementById('mixBackBtn').addEventListener('click', () => {
+    closeMixDesign();
+    vibrate(12);
+  });
+  document.getElementById('mixCalcBtn').addEventListener('click', runMixCalculation);
+  document.querySelectorAll('.mix-air-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.mix-air-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      vibrate(10);
+    });
+  });
+
   // ---- Nuevo archivo ----
   document.getElementById('newFileBtn').addEventListener('click', async () => {
-    if(history.length > 0){
+    if(history.length > 0 || mixDesignData){
       const ok = await showConfirm('¿Iniciar un archivo nuevo? Los cambios no guardados se perderán.');
       if(!ok) return;
     }
     history = [];
     currentFile = null;
+    resetMixDesignUI();
+    if(mixMode) closeMixDesign();
     renderHistory();
     updateFileLabel();
     vibrate(12);
@@ -1248,12 +1805,22 @@
             if(!ok) return;
           }
           const content = await readFileContent(f.id);
-          history = content;
+          // Compatibilidad: archivos guardados antes de esta versión eran un array plano
+          let loadedMixDesign = null;
+          if(Array.isArray(content)){
+            history = content;
+          } else {
+            history = content.history || [];
+            loadedMixDesign = content.mixDesign || null;
+          }
+          resetMixDesignUI();
+          if(loadedMixDesign) restoreMixDesignUI(loadedMixDesign);
           currentFile = {id: f.id, name: f.name, savedAt: f.savedAt};
           renderHistory();
           updateFileLabel();
           closeOpenFileModal();
           document.getElementById('menuPanel').classList.remove('open');
+          if(mixMode) closeMixDesign();
           vibrate(12);
         });
 
