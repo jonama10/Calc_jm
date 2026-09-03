@@ -1,7 +1,7 @@
 {
   "name": "Calculadora HP Style",
   "short_name": "Calc HP",
-  "description": "Calculadora inspirada en HP Prime con historial, notas y conversiones",
+  "description": "Calculadora inspirada en HP Prime con historial, notas, conversiones, diseño de mezcla de concreto, regla de tres y hoja de cálculo",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

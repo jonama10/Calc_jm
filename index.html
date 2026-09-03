@@ -32,6 +32,39 @@
     --marker-font: 'MarkerFont', 'Segoe UI', Arial, sans-serif;
     --hist-font-size: 16px;
   }
+
+  /* ---- Tema "Cuaderno": hoja cuadriculada con colores tipo apuntes a mano ---- */
+  html[data-theme="notebook"] #screen{
+    background-color: #eef4fb;
+    background-image:
+      linear-gradient(rgba(90,140,205,0.4) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(90,140,205,0.4) 1px, transparent 1px);
+    background-size: 24px 24px;
+    border-bottom-color: #3b6fa0;
+  }
+  html[data-theme="notebook"] #expr,
+  html[data-theme="notebook"] #expr2d{
+    color: #1a4fc4;
+  }
+  html[data-theme="notebook"] #expr.typing{
+    color: #1a4fc4;
+  }
+  html[data-theme="notebook"] #result{
+    color: #c0392b;
+  }
+  html[data-theme="notebook"] .hist-expr,
+  html[data-theme="notebook"] .hist-res{
+    color: #16181c;
+  }
+  html[data-theme="notebook"] .hist-entry{
+    border-bottom-color: rgba(59,111,160,0.25);
+  }
+  html[data-theme="notebook"] .hist-note{
+    color: #c0392b;
+  }
+  html[data-theme="notebook"] #currentLine{
+    border-top-color: rgba(59,111,160,0.3);
+  }
   *{box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
   html,body{
     margin:0; padding:0;
@@ -134,6 +167,29 @@
     height: 0;
     overflow: hidden;
   }
+  .frac{
+    display:inline-flex; flex-direction:column; align-items:center;
+    vertical-align:middle; margin:0 3px; line-height:1.15;
+    font-size:0.78em;
+  }
+  .frac .frac-num{ border-bottom:2px solid currentColor; padding:0 4px 1px 4px; }
+  .frac .frac-den{ padding:1px 4px 0 4px; }
+
+  #expr2d{
+    display:none;
+    text-align:right;
+    font-family: var(--marker-font);
+    font-size: 26px;
+    color:#2f3228;
+    line-height:1.3;
+    word-break: break-word;
+    padding-bottom: 2px;
+  }
+  #expr2d.visible{ display:block; }
+  #expr2d .frac{ font-size:0.62em; margin:0 4px; }
+  .radical{ display:inline-flex; align-items:flex-start; vertical-align:middle; }
+  .radical-sym{ font-size:1.05em; margin-right:1px; transform: scaleY(1.15); }
+  .radical-bar{ border-top:2px solid currentColor; padding:0 3px; }
 
   /* Menu panel */
   #menuPanel{
@@ -202,8 +258,8 @@
   /* Keypad: una sola columna de filas, siempre 4 botones de ancho.
      Ligeramente más alto que antes y con separación mínima entre botones. */
   #keypad{
-    flex: 0 0 40dvh;
-    height: 40dvh;
+    flex: 0 0 44dvh;
+    height: 44dvh;
     display:flex;
     flex-direction:column;
     gap: 2px;
@@ -347,8 +403,8 @@
   }
   .file-empty{color:#888; font-size:14px; text-align:center; padding: 16px 0;}
 
-  /* ---- Diseño de Mezcla de Concreto ---- */
-  #mixDesignScreen{
+  /* ---- Diseño de Mezcla de Concreto / Regla de Tres ---- */
+  #mixDesignScreen, #rule3Screen, #sheetScreen{
     display:none;
     flex-direction:column;
     height:100%;
@@ -356,17 +412,32 @@
   }
   #app.mix-active #history,
   #app.mix-active #currentLine,
-  #app.mix-active #keypad{
+  #app.mix-active #keypad,
+  #app.rule3-active #history,
+  #app.rule3-active #currentLine,
+  #app.rule3-active #keypad,
+  #app.sheet-active #history,
+  #app.sheet-active #currentLine,
+  #app.sheet-active #keypad{
     display:none !important;
   }
   #app.mix-active #mixDesignScreen{
     display:flex;
   }
-  #app.mix-active #screen{
+  #app.rule3-active #rule3Screen{
+    display:flex;
+  }
+  #app.sheet-active #sheetScreen{
+    display:flex;
+  }
+  #app.mix-active #screen,
+  #app.rule3-active #screen,
+  #app.sheet-active #screen{
     border-bottom: none;
   }
   /* Mientras se edita un campo del formulario, el teclado reaparece temporalmente */
-  #app.mix-active.mix-editing #keypad{
+  #app.mix-active.mix-editing #keypad,
+  #app.rule3-active.mix-editing #keypad{
     display:flex !important;
   }
   .mix-row input[type="text"]:focus{
@@ -447,6 +518,99 @@
     font-size:11px; color:#5c6350; margin-top:10px; line-height:1.4;
     font-family: 'Segoe UI', Arial, sans-serif;
   }
+  .mix-export-row{ display:flex; gap:8px; margin-top:6px; }
+  .mix-export-row .mix-calc-btn{ margin-top:0; font-size:14px; padding:12px 6px; }
+  .share-btn{ background: var(--accent) !important; }
+  .share-btn:active{ background: var(--accent-dark) !important; }
+  .print-btn{ background:#3d4049 !important; }
+  .print-btn:active{ background:#2a2c33 !important; }
+
+  /* ---- Impresión / exportar a PDF: solo se muestra la hoja de diseño de mezcla ---- */
+  @media print{
+    body *{ visibility:hidden; }
+    #mixSheet, #mixSheet *{ visibility:visible; }
+    #mixSheet{
+      position:absolute; top:0; left:0; width:100%;
+      padding:16px; background:#fff !important;
+    }
+    #mixSheet input, #mixSheet select{
+      border:none !important; background:none !important; color:#000 !important;
+      -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    }
+    .mix-calc-btn, .mix-export-row{ display:none !important; }
+  }
+
+  /* ---- Hoja de Cálculo ---- */
+  .sheet-toolbar{
+    display:flex; gap:6px; padding: 8px 10px 4px 10px; flex-shrink:0;
+  }
+  .sheet-toolbar input{
+    flex:1; padding:8px; border-radius:8px; border:1px solid rgba(61,64,73,0.3);
+    background:rgba(255,255,255,0.5); font-size:13px; color:#2f3228;
+    font-family: 'Segoe UI', Arial, sans-serif;
+  }
+  .sheet-toolbar button{
+    background: var(--accent-dark); color:#fff; border:none; border-radius:8px;
+    padding: 8px 14px; font-size:13px; cursor:pointer;
+  }
+  .sheet-formula-bar{
+    display:flex; align-items:center; gap:6px; padding: 4px 10px 8px 10px; flex-shrink:0;
+  }
+  #sheetSelectedCell{
+    background: var(--accent-dark); color:#fff; font-weight:700; font-size:13px;
+    padding: 8px 10px; border-radius:8px; min-width:44px; text-align:center;
+    font-family: 'Segoe UI', Arial, sans-serif;
+  }
+  .sheet-formula-bar input{
+    flex:1; min-width:0; padding:8px; border-radius:8px; border:1px solid rgba(61,64,73,0.3);
+    background:rgba(255,255,255,0.6); font-size:14px; color:#2f3228;
+    font-family: 'Segoe UI', Arial, sans-serif;
+  }
+  .sheet-formula-bar button{
+    background: var(--accent); color:#fff; border:none; border-radius:8px;
+    width:38px; height:36px; font-size:16px; cursor:pointer; flex-shrink:0;
+  }
+  .sheet-grid-wrap{
+    flex:1; min-height:0; overflow:auto; padding: 0 10px;
+  }
+  #sheetTable{
+    border-collapse:collapse; background: rgba(255,255,255,0.4);
+  }
+  #sheetTable th, #sheetTable td{
+    border:1px solid rgba(61,64,73,0.25);
+    font-size:12.5px; text-align:center;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  #sheetTable th{
+    background: rgba(61,64,73,0.15); color:#2f3228; font-weight:700;
+    padding: 6px 4px; position:sticky; top:0;
+  }
+  .sheet-rowhead{ min-width:32px; position:sticky; left:0; z-index:1; }
+  .sheet-corner{ position:sticky; left:0; top:0; z-index:2; }
+  .sheet-cell{
+    min-width:58px; max-width:58px; height:28px; padding:4px 5px;
+    color:#2f3228; cursor:pointer;
+  }
+  .sheet-cell.selected{
+    background: rgba(124,154,92,0.4) !important;
+    outline: 2px solid var(--accent-dark);
+    outline-offset:-2px;
+  }
+  .sheet-nav{
+    display:flex; flex-direction:column; align-items:center; gap:4px;
+    padding: 6px 10px; flex-shrink:0;
+  }
+  .sheet-nav-row{ display:flex; gap:20px; align-items:center; }
+  .sheet-nav button{
+    background: var(--accent-dark); color:#fff; border:none; border-radius:8px;
+    width:44px; height:34px; font-size:15px; cursor:pointer;
+  }
+  #sheetHomeBtn{ width:50px; font-size:12px; }
+  .sheet-help{
+    font-size:10.5px; color:#5c6350; padding: 2px 10px 8px 10px; margin:0;
+    font-family: 'Segoe UI', Arial, sans-serif; line-height:1.35; flex-shrink:0;
+  }
 </style>
 </head>
 <body>
@@ -470,6 +634,7 @@
   <div id="screen">
     <div id="history"></div>
     <div id="currentLine">
+      <div id="expr2d"></div>
       <textarea id="expr" rows="1" inputmode="none" autocomplete="off" autocorrect="off" spellcheck="false"></textarea>
       <div id="result">0</div>
     </div>
@@ -486,7 +651,7 @@
           <h4>1. Datos de diseño</h4>
           <div class="mix-row">
             <label>f'c (kg/cm²)</label>
-            <input type="text" inputmode="none" readonly id="mixFc" placeholder="Ej: 210">
+            <input type="text" inputmode="none" readonly class="calc-field" id="mixFc" placeholder="Ej: 210">
           </div>
           <div class="mix-row">
             <label>Asentamiento (slump)</label>
@@ -530,48 +695,112 @@
           <h4>2. Cemento</h4>
           <div class="mix-row">
             <label>Peso por bolsa (kg)</label>
-            <input type="text" inputmode="none" readonly id="mixPesoBolsa" value="42.5">
+            <input type="text" inputmode="none" readonly class="calc-field" id="mixPesoBolsa" value="42.5">
           </div>
           <div class="mix-row">
             <label>Peso específico cemento (g/cm³)</label>
-            <input type="text" inputmode="none" readonly id="mixPeCemento" value="3.15">
+            <input type="text" inputmode="none" readonly class="calc-field" id="mixPeCemento" value="3.15">
           </div>
         </div>
 
         <div class="mix-section">
           <h4>3. Agregado fino (arena)</h4>
           <p class="mix-hint">Si no tienes el dato de laboratorio, deja el "." — se usará un valor típico marcado en rojo.</p>
-          <div class="mix-row"><label>Peso específico (g/cm³)</label><input type="text" inputmode="none" readonly id="mixPeFino" value="."></div>
-          <div class="mix-row"><label>P.U. suelto (kg/m³)</label><input type="text" inputmode="none" readonly id="mixPusFino" value="."></div>
-          <div class="mix-row"><label>Contenido de humedad (%)</label><input type="text" inputmode="none" readonly id="mixHumFino" value="."></div>
-          <div class="mix-row"><label>Absorción (%)</label><input type="text" inputmode="none" readonly id="mixAbsFino" value="."></div>
-          <div class="mix-row"><label>Módulo de fineza</label><input type="text" inputmode="none" readonly id="mixMfFino" value="."></div>
+          <div class="mix-row"><label>Peso específico (g/cm³)</label><input type="text" inputmode="none" readonly class="calc-field" data-default-dot="true" id="mixPeFino" value="."></div>
+          <div class="mix-row"><label>P.U. suelto (kg/m³)</label><input type="text" inputmode="none" readonly class="calc-field" data-default-dot="true" id="mixPusFino" value="."></div>
+          <div class="mix-row"><label>Contenido de humedad (%)</label><input type="text" inputmode="none" readonly class="calc-field" data-default-dot="true" id="mixHumFino" value="."></div>
+          <div class="mix-row"><label>Absorción (%)</label><input type="text" inputmode="none" readonly class="calc-field" data-default-dot="true" id="mixAbsFino" value="."></div>
+          <div class="mix-row"><label>Módulo de fineza</label><input type="text" inputmode="none" readonly class="calc-field" data-default-dot="true" id="mixMfFino" value="."></div>
         </div>
 
         <div class="mix-section">
           <h4>4. Agregado grueso (piedra)</h4>
           <p class="mix-hint">Igual que arriba: "." usa un valor típico (en rojo) si no tienes el dato real.</p>
-          <div class="mix-row"><label>Peso específico (g/cm³)</label><input type="text" inputmode="none" readonly id="mixPeGrueso" value="."></div>
-          <div class="mix-row"><label>P.U. suelto (kg/m³)</label><input type="text" inputmode="none" readonly id="mixPusGrueso" value="."></div>
-          <div class="mix-row"><label>P.U. compactado (kg/m³)</label><input type="text" inputmode="none" readonly id="mixPucGrueso" value="."></div>
-          <div class="mix-row"><label>Contenido de humedad (%)</label><input type="text" inputmode="none" readonly id="mixHumGrueso" value="."></div>
-          <div class="mix-row"><label>Absorción (%)</label><input type="text" inputmode="none" readonly id="mixAbsGrueso" value="."></div>
+          <div class="mix-row"><label>Peso específico (g/cm³)</label><input type="text" inputmode="none" readonly class="calc-field" data-default-dot="true" id="mixPeGrueso" value="."></div>
+          <div class="mix-row"><label>P.U. suelto (kg/m³)</label><input type="text" inputmode="none" readonly class="calc-field" data-default-dot="true" id="mixPusGrueso" value="."></div>
+          <div class="mix-row"><label>P.U. compactado (kg/m³)</label><input type="text" inputmode="none" readonly class="calc-field" data-default-dot="true" id="mixPucGrueso" value="."></div>
+          <div class="mix-row"><label>Contenido de humedad (%)</label><input type="text" inputmode="none" readonly class="calc-field" data-default-dot="true" id="mixHumGrueso" value="."></div>
+          <div class="mix-row"><label>Absorción (%)</label><input type="text" inputmode="none" readonly class="calc-field" data-default-dot="true" id="mixAbsGrueso" value="."></div>
         </div>
 
         <button id="mixCalcBtn" class="mix-calc-btn">Calcular diseño de mezcla</button>
 
         <div id="mixResults" class="mix-results"></div>
 
+        <div class="mix-export-row">
+          <button id="mixShareBtn" class="mix-calc-btn share-btn">📤 Compartir</button>
+          <button id="mixPrintBtn" class="mix-calc-btn print-btn">🖨️ Exportar PDF</button>
+        </div>
+
       </div>
+    </div>
+
+    <div id="rule3Screen">
+      <div class="mix-topbar">
+        <button id="rule3BackBtn">← Calculadora</button>
+        <span class="mix-title">Regla de Tres Simple</span>
+      </div>
+      <div class="mix-sheet" id="rule3Sheet">
+        <div class="mix-section">
+          <div class="mix-row">
+            <label>Tipo de proporción</label>
+            <div class="seg-group">
+              <button class="seg-btn rule3-type-btn active" data-type="directa">Directa</button>
+              <button class="seg-btn rule3-type-btn" data-type="inversa">Inversa</button>
+            </div>
+          </div>
+          <p class="mix-hint" id="rule3Hint">A es a B, como C es a X (A/B = C/X)</p>
+          <div class="mix-row"><label>A</label><input type="text" class="calc-field" inputmode="none" readonly id="r3A"></div>
+          <div class="mix-row"><label>B</label><input type="text" class="calc-field" inputmode="none" readonly id="r3B"></div>
+          <div class="mix-row"><label>C</label><input type="text" class="calc-field" inputmode="none" readonly id="r3C"></div>
+        </div>
+        <button id="rule3CalcBtn" class="mix-calc-btn">Calcular X</button>
+        <div id="rule3Results" class="mix-results"></div>
+      </div>
+    </div>
+
+    <div id="sheetScreen">
+      <div class="mix-topbar">
+        <button id="sheetBackBtn">← Calculadora</button>
+        <span class="mix-title">Hoja de Cálculo</span>
+      </div>
+      <div class="sheet-toolbar">
+        <input type="text" id="sheetGotoInput" placeholder="Ir a celda (ej: B12)">
+        <button id="sheetGotoBtn">Ir</button>
+      </div>
+      <div class="sheet-formula-bar">
+        <span id="sheetSelectedCell">A1</span>
+        <input type="text" id="sheetFormulaInput" placeholder="Valor o fórmula, ej: =SUMA(A1:A10)">
+        <button id="sheetCommitBtn">✓</button>
+      </div>
+      <div class="sheet-grid-wrap">
+        <table id="sheetTable"></table>
+      </div>
+      <div class="sheet-nav">
+        <button id="sheetUpBtn">▲</button>
+        <div class="sheet-nav-row">
+          <button id="sheetLeftBtn">◀</button>
+          <button id="sheetHomeBtn">A1</button>
+          <button id="sheetRightBtn">▶</button>
+        </div>
+        <button id="sheetDownBtn">▼</button>
+      </div>
+      <p class="sheet-help">Funciones: SUMA, PRODUCTO, PROMEDIO, MAX, MIN, CONTAR, SI(cond,si,no), O(...), Y(...). Rangos: A1:A10</p>
     </div>
   </div>
 
   <div id="keypad">
     <div class="kp-row">
+      <button class="key fn" data-action="fractoggle">a/b</button>
+      <button class="key fn" data-action="curleft">←</button>
+      <button class="key fn" data-action="curright">→</button>
+      <button class="key fn" data-action="del">⌫</button>
+    </div>
+    <div class="kp-row">
       <button class="key fn" data-action="sin">sin</button>
       <button class="key fn" data-action="cos">cos</button>
       <button class="key fn" data-action="tan">tan</button>
-      <button class="key fn" data-action="del">←</button>
+      <button class="key fn" data-action="rule3open">R3</button>
     </div>
     <div class="kp-row">
       <button class="key fn" data-action="ans">Ans</button>
@@ -605,8 +834,8 @@
     </div>
     <div class="kp-row">
       <button class="key fn" data-action="clear">Esc</button>
-      <button class="key num" data-action="0">0</button>
       <button class="key fn" data-action=".">.</button>
+      <button class="key num" data-action="0">0</button>
       <button class="key equals" data-action="equals">⏎</button>
     </div>
   </div>
@@ -639,6 +868,9 @@
     </div>
     <div class="modal-actions" style="margin-top:14px;">
       <button id="openMixDesignBtn" class="modal-btn primary" style="width:100%;">🧱 Diseño de Mezcla de Concreto</button>
+    </div>
+    <div class="modal-actions">
+      <button id="openSheetBtn" class="modal-btn primary" style="width:100%;">📊 Hoja de Cálculo</button>
     </div>
     <div class="modal-actions">
       <button id="fxClose" class="modal-btn secondary">Cerrar</button>
@@ -693,6 +925,14 @@
 <div id="settingsPanel">
   <div id="settingsBox">
     <h3>Configuración</h3>
+
+    <div class="setting-row">
+      <label>Tema de pantalla</label>
+      <div class="seg-group" id="themeGroup">
+        <button class="seg-btn theme-btn active" data-theme="classic">Clásico</button>
+        <button class="seg-btn theme-btn" data-theme="notebook">Cuaderno</button>
+      </div>
+    </div>
 
     <div class="setting-row">
       <label>Color de acento</label>
@@ -767,11 +1007,11 @@
 
   // 5 niveles de tamaño: el nivel 3 conserva el tamaño anterior por defecto (42/20px)
   const FONT_SIZE_LEVELS = {
-    1: { result: 26, expr: 13, hist: 12 },
-    2: { result: 34, expr: 16, hist: 14 },
-    3: { result: 42, expr: 20, hist: 16 },
-    4: { result: 50, expr: 24, hist: 18 },
-    5: { result: 58, expr: 28, hist: 20 },
+    1: { result: 26, expr: 13, hist: 12, expr2d: 17 },
+    2: { result: 34, expr: 16, hist: 14, expr2d: 21 },
+    3: { result: 42, expr: 20, hist: 16, expr2d: 26 },
+    4: { result: 50, expr: 24, hist: 18, expr2d: 31 },
+    5: { result: 58, expr: 28, hist: 20, expr2d: 36 },
   };
 
   let lastAns = 0;
@@ -780,6 +1020,7 @@
   let accentIndex = 1;
   let decimalPlaces = '3';
   let angleMode = 'DEG';
+  let currentTheme = 'classic';
   let currentFile = null; // { id, name, savedAt } | null = "Nuevo archivo"
 
   const exprEl = document.getElementById('expr');
@@ -827,6 +1068,7 @@
         accentIndex = parsed.accentIndex !== undefined ? parsed.accentIndex : 1;
         if(parsed.decimalPlaces !== undefined) decimalPlaces = parsed.decimalPlaces;
         if(parsed.angleMode) angleMode = parsed.angleMode;
+        if(parsed.theme) currentTheme = parsed.theme;
       }
     }catch(e){}
     applySettings();
@@ -838,7 +1080,7 @@
   }
 
   async function saveSettings(){
-    storageSet('calc-settings', JSON.stringify({fontSizeLevel, accentIndex, decimalPlaces, angleMode}));
+    storageSet('calc-settings', JSON.stringify({fontSizeLevel, accentIndex, decimalPlaces, angleMode, theme: currentTheme}));
   }
 
   // ---- File management (índice + contenido por archivo) ----
@@ -873,7 +1115,7 @@
   // Guarda el historial actual (y el diseño de mezcla, si hay uno) en el archivo abierto
   async function persistCurrentFile(){
     if(!currentFile) return;
-    await writeFileContent(currentFile.id, { history, mixDesign: mixDesignData });
+    await writeFileContent(currentFile.id, { history, mixDesign: mixDesignData, sheet: sheetData });
     currentFile.savedAt = Date.now();
     const idx = await loadFilesIndex();
     const pos = idx.findIndex(f => f.id === currentFile.id);
@@ -885,7 +1127,7 @@
   // Autoguardado best-effort al cerrar/ocultar la app (solo si el archivo ya tiene nombre)
   function autoSaveOnClose(){
     if(!currentFile) return;
-    writeFileContent(currentFile.id, { history, mixDesign: mixDesignData });
+    writeFileContent(currentFile.id, { history, mixDesign: mixDesignData, sheet: sheetData });
     loadFilesIndex().then(idx => {
       const pos = idx.findIndex(f => f.id === currentFile.id);
       const record = {id: currentFile.id, name: currentFile.name, savedAt: Date.now()};
@@ -905,6 +1147,7 @@
     const level = FONT_SIZE_LEVELS[fontSizeLevel] || FONT_SIZE_LEVELS[3];
     resultEl.style.fontSize = level.result + 'px';
     exprEl.style.fontSize = level.expr + 'px';
+    document.getElementById('expr2d').style.fontSize = level.expr2d + 'px';
     document.documentElement.style.setProperty('--hist-font-size', level.hist + 'px');
     document.querySelectorAll('#fontSizeGroup .size-btn').forEach(btn => {
       btn.classList.toggle('active', parseInt(btn.dataset.level) === fontSizeLevel);
@@ -913,6 +1156,10 @@
     document.getElementById('angleBadge').textContent = angleMode === 'DEG' ? 'GRD' : 'RAD';
     document.getElementById('degBtn').classList.toggle('active', angleMode === 'DEG');
     document.getElementById('radBtn').classList.toggle('active', angleMode === 'RAD');
+    document.documentElement.dataset.theme = currentTheme;
+    document.querySelectorAll('.theme-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.theme === currentTheme);
+    });
     buildColorGrid();
     updateDisplay();
   }
@@ -932,6 +1179,24 @@
       };
       grid.appendChild(dot);
     });
+  }
+
+  // Borrado en cascada con la tecla ⌫ cuando no hay nada escrito:
+  // 1ra pulsación: oculta el resultado de la última entrada.
+  // 2da pulsación: elimina esa entrada por completo. Y así sucesivamente.
+  let historyDeleteStage = 0;
+  function handleHistoryBackspace(){
+    if(history.length === 0) return;
+    const lastEntry = history[history.length - 1];
+    if(lastEntry.type === 'note' || historyDeleteStage === 1){
+      history.pop();
+      historyDeleteStage = 0;
+    } else {
+      lastEntry._resultHidden = true;
+      historyDeleteStage = 1;
+    }
+    renderHistory();
+    vibrate(10);
   }
 
   function renderHistory(){
@@ -954,7 +1219,7 @@
 
       const resSpan = document.createElement('span');
       resSpan.className = 'hist-res';
-      resSpan.textContent = h.result;
+      resSpan.textContent = h._resultHidden ? '—' : h.result;
 
       div.appendChild(exprSpan);
       div.appendChild(resSpan);
@@ -992,7 +1257,9 @@
 
       historyEl.appendChild(div);
     });
-    historyEl.scrollTop = historyEl.scrollHeight;
+    requestAnimationFrame(() => {
+      historyEl.scrollTop = historyEl.scrollHeight;
+    });
   }
 
   function toEvalExpr(str){
@@ -1011,6 +1278,147 @@
     return s;
   }
 
+  // ---- Vista bidimensional de la expresión (estilo "libro de texto") ----
+  function tokenizeExpr2D(str){
+    const tokens = [];
+    let i = 0;
+    while(i < str.length){
+      const c = str[i];
+      if(c === ' '){ i++; continue; }
+      if(/[0-9.]/.test(c)){
+        let j = i;
+        while(j < str.length && /[0-9.]/.test(str[j])) j++;
+        tokens.push({type:'num', value: str.slice(i,j)});
+        i = j;
+        continue;
+      }
+      if(str.slice(i,i+3) === 'Ans'){ tokens.push({type:'ans'}); i += 3; continue; }
+      if(str.slice(i,i+3) === 'sin' && str[i+3] === '('){ tokens.push({type:'func', value:'sin'}); i += 3; continue; }
+      if(str.slice(i,i+3) === 'cos' && str[i+3] === '('){ tokens.push({type:'func', value:'cos'}); i += 3; continue; }
+      if(str.slice(i,i+3) === 'tan' && str[i+3] === '('){ tokens.push({type:'func', value:'tan'}); i += 3; continue; }
+      if(c === '√'){ tokens.push({type:'sqrt'}); i++; continue; }
+      if(c === 'π'){ tokens.push({type:'pi'}); i++; continue; }
+      if(c === '('){ tokens.push({type:'lparen'}); i++; continue; }
+      if(c === ')'){ tokens.push({type:'rparen'}); i++; continue; }
+      if('+-×÷^'.includes(c)){ tokens.push({type:'op', value:c}); i++; continue; }
+      i++; // carácter no reconocido: se omite para no romper el render
+    }
+    return tokens;
+  }
+
+  function parseExpr2D(tokens){
+    let pos = 0;
+    const peek = () => tokens[pos];
+    const next = () => tokens[pos++];
+
+    function parseExprLevel(){
+      let node = parseTerm();
+      while(peek() && peek().type === 'op' && (peek().value === '+' || peek().value === '-')){
+        const op = next().value;
+        node = {type:'binop', op, left:node, right:parseTerm()};
+      }
+      return node;
+    }
+    function parseTerm(){
+      let node = parsePower();
+      while(peek() && peek().type === 'op' && (peek().value === '×' || peek().value === '÷')){
+        const op = next().value;
+        node = {type:'binop', op, left:node, right:parsePower()};
+      }
+      return node;
+    }
+    function parsePower(){
+      let node = parseUnary();
+      if(peek() && peek().type === 'op' && peek().value === '^'){
+        next();
+        node = {type:'binop', op:'^', left:node, right:parsePower()};
+      }
+      return node;
+    }
+    function parseUnary(){
+      if(peek() && peek().type === 'op' && peek().value === '-'){
+        next();
+        return {type:'neg', value: parseUnary()};
+      }
+      return parsePrimary();
+    }
+    function parsePrimary(){
+      const t = peek();
+      if(!t) return {type:'empty'};
+      if(t.type === 'num'){ next(); return {type:'num', value:t.value}; }
+      if(t.type === 'ans'){ next(); return {type:'ans'}; }
+      if(t.type === 'pi'){ next(); return {type:'pi'}; }
+      if(t.type === 'func'){
+        next();
+        let inner = {type:'empty'};
+        if(peek() && peek().type === 'lparen'){
+          next(); inner = parseExprLevel();
+          if(peek() && peek().type === 'rparen') next();
+        }
+        return {type:'func', name:t.value, arg:inner};
+      }
+      if(t.type === 'sqrt'){
+        next();
+        let inner = {type:'empty'};
+        if(peek() && peek().type === 'lparen'){
+          next(); inner = parseExprLevel();
+          if(peek() && peek().type === 'rparen') next();
+        }
+        return {type:'sqrt', arg:inner};
+      }
+      if(t.type === 'lparen'){
+        next();
+        const inner = parseExprLevel();
+        if(peek() && peek().type === 'rparen') next();
+        return {type:'paren', arg:inner};
+      }
+      next();
+      return {type:'empty'};
+    }
+    return parseExprLevel();
+  }
+
+  function renderExpr2DNode(node){
+    switch(node.type){
+      case 'empty': return '';
+      case 'num': return node.value;
+      case 'ans': return 'Ans';
+      case 'pi': return 'π';
+      case 'neg': return '-' + renderExpr2DNode(node.value);
+      case 'paren': return '(' + renderExpr2DNode(node.arg) + ')';
+      case 'func': return node.name + '(' + renderExpr2DNode(node.arg) + ')';
+      case 'sqrt':
+        return `<span class="radical"><span class="radical-sym">√</span><span class="radical-bar">${renderExpr2DNode(node.arg)}</span></span>`;
+      case 'binop':
+        if(node.op === '÷'){
+          return renderFractionHTML(renderExpr2DNode(node.left), renderExpr2DNode(node.right));
+        }
+        if(node.op === '^'){
+          return `<span>${renderExpr2DNode(node.left)}<sup>${renderExpr2DNode(node.right)}</sup></span>`;
+        }
+        return renderExpr2DNode(node.left) + node.op + renderExpr2DNode(node.right);
+    }
+    return '';
+  }
+
+  function updateExpr2D(){
+    const el2d = document.getElementById('expr2d');
+    const val = exprEl.value;
+    if(!val){
+      el2d.classList.remove('visible');
+      el2d.innerHTML = '';
+      return;
+    }
+    try{
+      const tokens = tokenizeExpr2D(val);
+      const ast = parseExpr2D(tokens);
+      el2d.innerHTML = renderExpr2DNode(ast);
+      el2d.classList.add('visible');
+    }catch(e){
+      el2d.classList.remove('visible');
+    }
+  }
+
   function updateDisplay(){
     const val = exprEl.value;
     exprEl.style.height = 'auto';
@@ -1022,6 +1430,7 @@
       exprEl.classList.remove('typing');
       resultEl.classList.remove('hidden');
     }
+    updateExpr2D();
   }
 
   // Inserta texto en la posición exacta del cursor dentro del textarea de expresión
@@ -1265,6 +1674,67 @@
     vibrate(15);
   }
 
+  // ---- Exportar el diseño de mezcla ----
+  function buildMixShareText(){
+    if(!mixDesignData || !mixDesignData.results) return null;
+    const inp = mixDesignData.inputs;
+    const r = mixDesignData.results;
+    return [
+      'DISEÑO DE MEZCLA DE CONCRETO (ACI 211.1)',
+      `f'c: ${inp.fc} kg/cm²  |  f'cr: ${mixFmt(r.fcr,0)} kg/cm²`,
+      `Asentamiento: ${inp.slumpRange} mm  |  TMN: ${inp.tmn} mm  |  Exposición: ${inp.exposicion}`,
+      `Relación a/c: ${mixFmt(r.ac,3)}  |  Aire (${inp.conAire?'incorporado':'atrapado'}): ${mixFmt(r.aire,1)}%`,
+      '',
+      'POR m³ (base seca):',
+      `- Cemento: ${mixFmt(r.cemento,1)} kg (${mixFmt(r.bolsas,2)} bolsas)`,
+      `- Agua: ${mixFmt(r.agua,0)} L`,
+      `- Agregado fino seco: ${mixFmt(r.pesoFinoSeco,1)} kg`,
+      `- Agregado grueso seco: ${mixFmt(r.pesoGruesoSeco,1)} kg`,
+      '',
+      'CORREGIDO PARA CAMPO (con humedad real):',
+      `- Agua efectiva: ${mixFmt(r.aguaEfectiva,1)} L`,
+      `- Agregado fino húmedo: ${mixFmt(r.pesoFinoHumedo,1)} kg`,
+      `- Agregado grueso húmedo: ${mixFmt(r.pesoGruesoHumedo,1)} kg`,
+      '',
+      'POR BOLSA DE CEMENTO (volumen, para tanda de obra):',
+      `- Agua: ${mixFmt(r.aguaPorBolsa,1)} L`,
+      `- Agregado fino húmedo: ${mixFmt(r.finoHumedoPorBolsa,1)} kg → ${mixFmt(r.volFinoPorBolsaL,1)} L`,
+      `- Agregado grueso húmedo: ${mixFmt(r.gruesoHumedoPorBolsa,1)} kg → ${mixFmt(r.volGruesoPorBolsaL,1)} L`,
+      '',
+      'Generado con Calculadora HP Style. Verificar en campo antes de usar en obra.',
+    ].join('\n');
+  }
+
+  async function shareMixDesign(){
+    const text = buildMixShareText();
+    if(!text){
+      await showConfirm('Primero calcula un diseño de mezcla.', true);
+      return;
+    }
+    if(navigator.share){
+      try{
+        await navigator.share({ title: 'Diseño de Mezcla de Concreto', text });
+        return;
+      }catch(e){ /* el usuario canceló o el navegador falló; probamos portapapeles */ }
+    }
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      try{
+        await navigator.clipboard.writeText(text);
+        await showConfirm('Se copió el resumen al portapapeles (tu navegador no tiene menú de compartir). Puedes pegarlo donde quieras.', true);
+        return;
+      }catch(e){}
+    }
+    await showConfirm('No se pudo compartir ni copiar automáticamente. Intenta "Exportar PDF" en su lugar.', true);
+  }
+
+  async function printMixDesign(){
+    if(!mixDesignData || !mixDesignData.results){
+      await showConfirm('Primero calcula un diseño de mezcla.', true);
+      return;
+    }
+    window.print();
+  }
+
   function resetMixDesignUI(){
     document.getElementById('mixFc').value = '';
     document.getElementById('mixSlump').value = '75-100';
@@ -1318,6 +1788,442 @@
     document.getElementById('app').classList.remove('mix-active');
     document.getElementById('app').classList.remove('mix-editing');
     activeMixField = null;
+  }
+
+  // ---- Regla de Tres Simple ----
+  let rule3Mode = false;
+  function openRule3(){
+    rule3Mode = true;
+    document.getElementById('app').classList.add('rule3-active');
+    document.getElementById('fxPanel').classList.remove('open');
+    ['r3A','r3B','r3C'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('rule3Results').innerHTML = '';
+    vibrate(12);
+  }
+  function closeRule3(){
+    rule3Mode = false;
+    document.getElementById('app').classList.remove('rule3-active');
+    document.getElementById('app').classList.remove('mix-editing');
+    activeMixField = null;
+  }
+  async function calcRule3(){
+    const a = parseFloat(document.getElementById('r3A').value);
+    const b = parseFloat(document.getElementById('r3B').value);
+    const c = parseFloat(document.getElementById('r3C').value);
+    if(isNaN(a) || isNaN(b) || isNaN(c)){
+      await showConfirm('Ingresa los tres valores: A, B y C.', true);
+      return;
+    }
+    if(a === 0 || c === 0){
+      await showConfirm('A y C no pueden ser 0.', true);
+      return;
+    }
+    const tipo = document.querySelector('.rule3-type-btn.active').dataset.type;
+    const x = tipo === 'directa' ? (b * c) / a : (a * b) / c;
+    const xRounded = Math.round(x * 1e8) / 1e8;
+    document.getElementById('rule3Results').innerHTML = `
+      <h4>Resultado</h4>
+      <div class="mix-result-row"><span class="rlabel">X</span><span>${formatNumber(xRounded)}</span></div>
+      <p class="mix-note">${tipo === 'directa' ? 'Proporción directa: A/B = C/X' : 'Proporción inversa: A×B = C×X'}</p>
+    `;
+    vibrate(15);
+  }
+
+  // ============================================================
+  // ---- Hoja de Cálculo (300 columnas x 300 filas) ----
+  // ============================================================
+  let sheetMode = false;
+  let sheetData = {}; // "A1" -> texto crudo (numero o formula que empieza con "=")
+  const SHEET_MAX_COL = 300;
+  const SHEET_MAX_ROW = 300;
+  const SHEET_VIEW_COLS = 6;
+  const SHEET_VIEW_ROWS = 13;
+  let sheetViewCol = 1;
+  let sheetViewRow = 1;
+  let sheetSelCol = 1;
+  let sheetSelRow = 1;
+  let sheetEvaluating = null;
+
+  function colIndexToLetter(idx){
+    let s = '';
+    while(idx > 0){
+      const rem = (idx - 1) % 26;
+      s = String.fromCharCode(65 + rem) + s;
+      idx = Math.floor((idx - 1) / 26);
+    }
+    return s;
+  }
+  function colLetterToIndex(letter){
+    let idx = 0;
+    for(let i=0; i<letter.length; i++){
+      idx = idx*26 + (letter.charCodeAt(i) - 64);
+    }
+    return idx;
+  }
+
+  function tokenizeFormula(str){
+    const tokens = [];
+    let i = 0;
+    while(i < str.length){
+      const c = str[i];
+      if(c === ' '){ i++; continue; }
+      if(/[0-9.]/.test(c)){
+        let j = i;
+        while(j < str.length && /[0-9.]/.test(str[j])) j++;
+        tokens.push({type:'num', value: parseFloat(str.slice(i,j))});
+        i = j; continue;
+      }
+      if(c === '"'){
+        let j = i+1;
+        while(j < str.length && str[j] !== '"') j++;
+        tokens.push({type:'str', value: str.slice(i+1,j)});
+        i = j+1; continue;
+      }
+      if(/[A-Za-z]/.test(c)){
+        let j = i;
+        while(j < str.length && /[A-Za-z]/.test(str[j])) j++;
+        const letters = str.slice(i,j).toUpperCase();
+        if(j < str.length && /[0-9]/.test(str[j])){
+          let k = j;
+          while(k < str.length && /[0-9]/.test(str[k])) k++;
+          tokens.push({type:'cellref', col: letters, row: parseInt(str.slice(j,k))});
+          i = k;
+        } else {
+          tokens.push({type:'name', value: letters});
+          i = j;
+        }
+        continue;
+      }
+      if(c === ':'){ tokens.push({type:'colon'}); i++; continue; }
+      if(c === ','){ tokens.push({type:'comma'}); i++; continue; }
+      if(c === '('){ tokens.push({type:'lparen'}); i++; continue; }
+      if(c === ')'){ tokens.push({type:'rparen'}); i++; continue; }
+      if(c === '>' && str[i+1] === '='){ tokens.push({type:'op', value:'>='}); i+=2; continue; }
+      if(c === '<' && str[i+1] === '='){ tokens.push({type:'op', value:'<='}); i+=2; continue; }
+      if(c === '<' && str[i+1] === '>'){ tokens.push({type:'op', value:'<>'}); i+=2; continue; }
+      if('+-*/^><='.includes(c)){ tokens.push({type:'op', value:c}); i++; continue; }
+      i++;
+    }
+    return tokens;
+  }
+
+  function parseFormula(tokens){
+    let pos = 0;
+    const peek = () => tokens[pos];
+    const next = () => tokens[pos++];
+
+    function parseComparison(){
+      let node = parseAdd();
+      if(peek() && peek().type === 'op' && ['>','<','>=','<=','=','<>'].includes(peek().value)){
+        const op = next().value;
+        node = {type:'cmp', op, left:node, right:parseAdd()};
+      }
+      return node;
+    }
+    function parseAdd(){
+      let node = parseMul();
+      while(peek() && peek().type === 'op' && (peek().value === '+' || peek().value === '-')){
+        const op = next().value;
+        node = {type:'binop', op, left:node, right:parseMul()};
+      }
+      return node;
+    }
+    function parseMul(){
+      let node = parsePow();
+      while(peek() && peek().type === 'op' && (peek().value === '*' || peek().value === '/')){
+        const op = next().value;
+        node = {type:'binop', op, left:node, right:parsePow()};
+      }
+      return node;
+    }
+    function parsePow(){
+      let node = parseUnary();
+      if(peek() && peek().type === 'op' && peek().value === '^'){
+        next();
+        node = {type:'binop', op:'^', left:node, right:parsePow()};
+      }
+      return node;
+    }
+    function parseUnary(){
+      if(peek() && peek().type === 'op' && peek().value === '-'){
+        next();
+        return {type:'neg', value: parseUnary()};
+      }
+      return parsePrimary();
+    }
+    function parsePrimary(){
+      const t = peek();
+      if(!t) return {type:'empty'};
+      if(t.type === 'num'){ next(); return {type:'num', value:t.value}; }
+      if(t.type === 'str'){ next(); return {type:'str', value:t.value}; }
+      if(t.type === 'cellref'){
+        next();
+        if(peek() && peek().type === 'colon' && tokens[pos+1] && tokens[pos+1].type === 'cellref'){
+          next();
+          const end = next();
+          return {type:'range', startCol:t.col, startRow:t.row, endCol:end.col, endRow:end.row};
+        }
+        return {type:'cellref', col:t.col, row:t.row};
+      }
+      if(t.type === 'name'){
+        next();
+        const args = [];
+        if(peek() && peek().type === 'lparen'){
+          next();
+          if(peek() && peek().type !== 'rparen'){
+            args.push(parseComparison());
+            while(peek() && peek().type === 'comma'){
+              next();
+              args.push(parseComparison());
+            }
+          }
+          if(peek() && peek().type === 'rparen') next();
+        }
+        return {type:'func', name:t.value, args};
+      }
+      if(t.type === 'lparen'){
+        next();
+        const inner = parseComparison();
+        if(peek() && peek().type === 'rparen') next();
+        return {type:'paren', arg:inner};
+      }
+      next();
+      return {type:'empty'};
+    }
+    return parseComparison();
+  }
+
+  function evaluateFormulaAST(node, getCellValue, rangeToList){
+    switch(node.type){
+      case 'empty': return 0;
+      case 'num': return node.value;
+      case 'str': return node.value;
+      case 'neg': return -evaluateFormulaAST(node.value, getCellValue, rangeToList);
+      case 'paren': return evaluateFormulaAST(node.arg, getCellValue, rangeToList);
+      case 'cellref': return getCellValue(node.col, node.row);
+      case 'range': return rangeToList(node.startCol, node.startRow, node.endCol, node.endRow);
+      case 'cmp': {
+        const l = evaluateFormulaAST(node.left, getCellValue, rangeToList);
+        const r = evaluateFormulaAST(node.right, getCellValue, rangeToList);
+        switch(node.op){
+          case '>': return l > r; case '<': return l < r;
+          case '>=': return l >= r; case '<=': return l <= r;
+          case '=': return l == r; case '<>': return l != r;
+        }
+        return false;
+      }
+      case 'binop': {
+        const l = Number(evaluateFormulaAST(node.left, getCellValue, rangeToList));
+        const r = Number(evaluateFormulaAST(node.right, getCellValue, rangeToList));
+        switch(node.op){
+          case '+': return l + r; case '-': return l - r;
+          case '*': return l * r; case '/': return l / r;
+          case '^': return Math.pow(l, r);
+        }
+        return 0;
+      }
+      case 'func': {
+        const evalArg = (a) => evaluateFormulaAST(a, getCellValue, rangeToList);
+        const flatten = (args) => {
+          let vals = [];
+          args.forEach(a => {
+            const v = evalArg(a);
+            if(Array.isArray(v)) vals = vals.concat(v);
+            else vals.push(v);
+          });
+          return vals;
+        };
+        const name = node.name;
+        if(name === 'SUMA') return flatten(node.args).reduce((s,v)=>s+Number(v||0),0);
+        if(name === 'PRODUCTO') return flatten(node.args).reduce((p,v)=>p*Number(v||0),1);
+        if(name === 'PROMEDIO'){
+          const vals = flatten(node.args).map(Number).filter(v=>!isNaN(v));
+          return vals.length ? vals.reduce((s,v)=>s+v,0)/vals.length : 0;
+        }
+        if(name === 'MAX'){
+          const vals = flatten(node.args).map(Number).filter(v=>!isNaN(v));
+          return vals.length ? Math.max(...vals) : 0;
+        }
+        if(name === 'MIN'){
+          const vals = flatten(node.args).map(Number).filter(v=>!isNaN(v));
+          return vals.length ? Math.min(...vals) : 0;
+        }
+        if(name === 'CONTAR'){
+          return flatten(node.args).filter(v => v !== '' && v !== null && !isNaN(Number(v))).length;
+        }
+        if(name === 'SI'){
+          const cond = evalArg(node.args[0]);
+          return cond ? (node.args[1]?evalArg(node.args[1]):0) : (node.args[2]?evalArg(node.args[2]):0);
+        }
+        if(name === 'O') return node.args.some(a => !!evalArg(a));
+        if(name === 'Y') return node.args.every(a => !!evalArg(a));
+        return 0;
+      }
+    }
+    return 0;
+  }
+
+  function sheetGetCellValue(col, row){
+    const key = col + row;
+    if(sheetEvaluating.has(key)) return 0;
+    const raw = sheetData[key];
+    if(raw === undefined || raw === '') return 0;
+    const rawStr = String(raw);
+    if(rawStr.startsWith('=')){
+      sheetEvaluating.add(key);
+      try{
+        const tokens = tokenizeFormula(rawStr.slice(1));
+        const ast = parseFormula(tokens);
+        const val = evaluateFormulaAST(ast, sheetGetCellValue, sheetRangeToList);
+        sheetEvaluating.delete(key);
+        return val;
+      }catch(e){
+        sheetEvaluating.delete(key);
+        return '#ERROR';
+      }
+    }
+    const num = parseFloat(rawStr);
+    return isNaN(num) ? rawStr : num;
+  }
+  function sheetRangeToList(startCol, startRow, endCol, endRow){
+    const c1 = colLetterToIndex(startCol), c2 = colLetterToIndex(endCol);
+    const list = [];
+    for(let r = Math.min(startRow,endRow); r <= Math.max(startRow,endRow); r++){
+      for(let c = Math.min(c1,c2); c <= Math.max(c1,c2); c++){
+        list.push(sheetGetCellValue(colIndexToLetter(c), r));
+      }
+    }
+    return list;
+  }
+  function sheetGetDisplayValue(col, row){
+    sheetEvaluating = new Set();
+    const val = sheetGetCellValue(col, row);
+    if(typeof val === 'number'){
+      if(!isFinite(val)) return '#ERROR';
+      return String(Math.round(val * 1e6) / 1e6);
+    }
+    if(typeof val === 'boolean') return val ? 'VERDADERO' : 'FALSO';
+    return val;
+  }
+  function sheetEscapeHtml(str){
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function renderSheetGrid(){
+    const table = document.getElementById('sheetTable');
+    let html = '<tr><th class="sheet-corner"></th>';
+    for(let c = sheetViewCol; c < sheetViewCol + SHEET_VIEW_COLS && c <= SHEET_MAX_COL; c++){
+      html += `<th class="sheet-colhead">${colIndexToLetter(c)}</th>`;
+    }
+    html += '</tr>';
+    for(let r = sheetViewRow; r < sheetViewRow + SHEET_VIEW_ROWS && r <= SHEET_MAX_ROW; r++){
+      html += `<tr><th class="sheet-rowhead">${r}</th>`;
+      for(let c = sheetViewCol; c < sheetViewCol + SHEET_VIEW_COLS && c <= SHEET_MAX_COL; c++){
+        const colLetter = colIndexToLetter(c);
+        const isSelected = (c === sheetSelCol && r === sheetSelRow);
+        const displayVal = sheetGetDisplayValue(colLetter, r);
+        html += `<td class="sheet-cell${isSelected?' selected':''}" data-col="${colLetter}" data-row="${r}">${sheetEscapeHtml(displayVal)}</td>`;
+      }
+      html += '</tr>';
+    }
+    table.innerHTML = html;
+  }
+
+  function sheetUpdateSelection(){
+    const colLetter = colIndexToLetter(sheetSelCol);
+    document.getElementById('sheetSelectedCell').textContent = colLetter + sheetSelRow;
+    document.getElementById('sheetFormulaInput').value = sheetData[colLetter + sheetSelRow] || '';
+    renderSheetGrid();
+  }
+
+  function sheetEnsureViewportContains(col, row){
+    if(col < sheetViewCol) sheetViewCol = col;
+    if(col > sheetViewCol + SHEET_VIEW_COLS - 1) sheetViewCol = col - SHEET_VIEW_COLS + 1;
+    if(row < sheetViewRow) sheetViewRow = row;
+    if(row > sheetViewRow + SHEET_VIEW_ROWS - 1) sheetViewRow = row - SHEET_VIEW_ROWS + 1;
+    sheetViewCol = Math.max(1, Math.min(sheetViewCol, SHEET_MAX_COL - SHEET_VIEW_COLS + 1));
+    sheetViewRow = Math.max(1, Math.min(sheetViewRow, SHEET_MAX_ROW - SHEET_VIEW_ROWS + 1));
+  }
+
+  function openSheet(){
+    sheetMode = true;
+    document.getElementById('app').classList.add('sheet-active');
+    document.getElementById('fxPanel').classList.remove('open');
+    renderSheetGrid();
+    sheetUpdateSelection();
+    vibrate(12);
+  }
+  function closeSheet(){
+    sheetMode = false;
+    document.getElementById('app').classList.remove('sheet-active');
+  }
+
+  // ---- Fracciones: mostrar el resultado como fracción / número mixto ----
+  let resultDisplayMode = 0; // 0 = decimal, 1 = fracción impropia, 2 = número mixto
+
+  function decimalToFraction(x, maxDenom){
+    maxDenom = maxDenom || 100000;
+    const negative = x < 0;
+    x = Math.abs(x);
+    const whole = Math.floor(x);
+    const frac = x - whole;
+    if(frac < 1e-9) return {whole, num:0, den:1, negative};
+    let h1=1, h2=0, k1=0, k2=1, b=frac, a, num=0, den=1;
+    for(let i=0; i<30; i++){
+      a = Math.floor(b);
+      const h = a*h1+h2, k = a*k1+k2;
+      if(k > maxDenom) break;
+      h2=h1; h1=h; k2=k1; k1=k;
+      num=h; den=k;
+      if(Math.abs(b-a) < 1e-9) break;
+      b = 1/(b-a);
+    }
+    return {whole, num, den, negative};
+  }
+
+  function renderFractionHTML(num, den, wholeLabel){
+    let html = '';
+    if(wholeLabel !== undefined && wholeLabel !== null && wholeLabel !== ''){
+      html += `<span>${wholeLabel}</span>`;
+    }
+    html += `<span class="frac"><span class="frac-num">${num}</span><span class="frac-den">${den}</span></span>`;
+    return html;
+  }
+
+  function renderResultDisplay(){
+    if(resultDisplayMode === 0 || !isFinite(lastAns)){
+      resultEl.textContent = formatNumber(lastAns);
+      return;
+    }
+    const f = decimalToFraction(lastAns);
+    if(f.num === 0){
+      // Es un entero exacto: no hay parte fraccionaria que mostrar
+      resultEl.textContent = formatNumber(lastAns);
+      resultDisplayMode = 0;
+      return;
+    }
+    const sign = f.negative ? '-' : '';
+    if(resultDisplayMode === 1){
+      const improperNum = f.whole * f.den + f.num;
+      resultEl.innerHTML = renderFractionHTML(improperNum, f.den, sign);
+    } else {
+      resultEl.innerHTML = renderFractionHTML(f.num, f.den, sign + f.whole);
+    }
+  }
+
+  function toggleResultFraction(){
+    if(exprEl.value !== '') return; // solo aplica cuando se muestra el resultado grande
+    resultDisplayMode = (resultDisplayMode + 1) % 3;
+    renderResultDisplay();
+    vibrate(12);
+  }
+
+  // ---- Mover el cursor dentro de la expresión con las flechas ----
+  function moveCursor(delta){
+    exprEl.focus();
+    const pos = exprEl.selectionStart != null ? exprEl.selectionStart : exprEl.value.length;
+    const newPos = Math.max(0, Math.min(exprEl.value.length, pos + delta));
+    exprEl.setSelectionRange(newPos, newPos);
   }
 
   // ---- Edición de campos del formulario de mezcla usando el teclado de la calculadora ----
@@ -1374,8 +2280,9 @@
     }
   }
 
-  // Conecta el foco/desenfoque de cada campo numérico del formulario con el teclado
-  document.querySelectorAll('.mix-row input[type="text"]').forEach(input => {
+  // Conecta el foco/desenfoque de cada campo numérico editable (mezcla, regla de 3, etc.)
+  // con el teclado de la calculadora.
+  document.querySelectorAll('.calc-field').forEach(input => {
     input.addEventListener('focus', () => {
       activeMixField = input;
       document.getElementById('app').classList.add('mix-editing');
@@ -1385,9 +2292,8 @@
       input.classList.remove('assumed');
     });
     input.addEventListener('blur', () => {
-      if(input.value.trim() === ''){
-        // El campo "f'c" no tiene punto por defecto: se deja vacío (es obligatorio).
-        if(input.id !== 'mixFc') input.value = '.';
+      if(input.value.trim() === '' && input.dataset.defaultDot === 'true'){
+        input.value = '.';
       }
       document.getElementById('app').classList.remove('mix-editing');
       if(activeMixField === input) activeMixField = null;
@@ -1421,8 +2327,10 @@
       const { value, exprToEval } = evaluateExpr(source);
       const converted = Math.round(value * multiplier * 1e10) / 1e10;
       lastAns = converted;
+      resultDisplayMode = 0;
       resultEl.textContent = formatNumber(converted);
       history.push({expr: exprToEval + ' ' + label, result: formatNumber(converted), raw: converted});
+      historyDeleteStage = 0;
       renderHistory();
       exprEl.value = '';
       updateDisplay();
@@ -1443,8 +2351,12 @@
         updateDisplay();
         return;
       case 'del':
-        backspaceAtCursor();
-        updateDisplay();
+        if(exprEl.value === ''){
+          handleHistoryBackspace();
+        } else {
+          backspaceAtCursor();
+          updateDisplay();
+        }
         return;
       case 'equals': {
         const currentExpr = exprEl.value;
@@ -1452,8 +2364,10 @@
         try{
           const { value, exprToEval } = evaluateExpr(currentExpr);
           lastAns = value;
+          resultDisplayMode = 0;
           resultEl.textContent = formatNumber(value);
           history.push({expr: exprToEval, result: formatNumber(value), raw: value});
+          historyDeleteStage = 0;
           renderHistory();
           exprEl.value = '';
           updateDisplay();
@@ -1473,6 +2387,18 @@
         return;
       case 'fxbox':
         openFxModal();
+        return;
+      case 'rule3open':
+        openRule3();
+        return;
+      case 'fractoggle':
+        toggleResultFraction();
+        return;
+      case 'curleft':
+        moveCursor(-1);
+        return;
+      case 'curright':
+        moveCursor(1);
         return;
       case 'sin': insertAtCursor('sin('); break;
       case 'cos': insertAtCursor('cos('); break;
@@ -1588,6 +2514,8 @@
     if(!ok) return;
     history = [];
     lastAns = 0;
+    resultDisplayMode = 0;
+    historyDeleteStage = 0;
     resultEl.textContent = '0';
     renderHistory();
   }
@@ -1612,6 +2540,14 @@
     angleMode = 'RAD';
     applySettings();
     saveSettings();
+  });
+  document.querySelectorAll('.theme-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      currentTheme = btn.dataset.theme;
+      applySettings();
+      saveSettings();
+      vibrate(12);
+    });
   });
   document.getElementById('angleBadge').addEventListener('click', () => {
     angleMode = angleMode === 'DEG' ? 'RAD' : 'DEG';
@@ -1643,6 +2579,7 @@
     const text = document.getElementById('noteInput').value.trim();
     if(text){
       history.push({type: 'note', text: text});
+      historyDeleteStage = 0;
       renderHistory();
     }
     closeNoteModal();
@@ -1681,6 +2618,8 @@
     vibrate(12);
   });
   document.getElementById('mixCalcBtn').addEventListener('click', runMixCalculation);
+  document.getElementById('mixShareBtn').addEventListener('click', shareMixDesign);
+  document.getElementById('mixPrintBtn').addEventListener('click', printMixDesign);
   document.querySelectorAll('.mix-air-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.mix-air-btn').forEach(b => b.classList.remove('active'));
@@ -1689,16 +2628,111 @@
     });
   });
 
+  // ---- Regla de Tres Simple ----
+  document.getElementById('rule3BackBtn').addEventListener('click', () => {
+    closeRule3();
+    vibrate(12);
+  });
+  document.getElementById('rule3CalcBtn').addEventListener('click', calcRule3);
+  document.querySelectorAll('.rule3-type-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.rule3-type-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const hint = document.getElementById('rule3Hint');
+      hint.textContent = btn.dataset.type === 'directa'
+        ? 'A es a B, como C es a X (A/B = C/X)'
+        : 'A por B es igual a C por X (A×B = C×X)';
+      vibrate(10);
+    });
+  });
+
+  // ---- Hoja de Cálculo ----
+  document.getElementById('openSheetBtn').addEventListener('click', openSheet);
+  document.getElementById('sheetBackBtn').addEventListener('click', () => {
+    closeSheet();
+    vibrate(12);
+  });
+
+  document.getElementById('sheetTable').addEventListener('click', (e) => {
+    const td = e.target.closest('.sheet-cell');
+    if(!td) return;
+    sheetSelCol = colLetterToIndex(td.dataset.col);
+    sheetSelRow = parseInt(td.dataset.row);
+    sheetUpdateSelection();
+    vibrate(8);
+  });
+
+  function sheetCommitCell(){
+    const colLetter = colIndexToLetter(sheetSelCol);
+    const key = colLetter + sheetSelRow;
+    const val = document.getElementById('sheetFormulaInput').value;
+    if(val === '') delete sheetData[key];
+    else sheetData[key] = val;
+    // Mover la selección a la fila siguiente, como al presionar Enter en Excel
+    sheetSelRow = Math.min(sheetSelRow + 1, SHEET_MAX_ROW);
+    sheetEnsureViewportContains(sheetSelCol, sheetSelRow);
+    sheetUpdateSelection();
+    vibrate(10);
+  }
+  document.getElementById('sheetCommitBtn').addEventListener('click', sheetCommitCell);
+  document.getElementById('sheetFormulaInput').addEventListener('keydown', (e) => {
+    if(e.key === 'Enter'){ e.preventDefault(); sheetCommitCell(); }
+  });
+
+  document.getElementById('sheetGotoBtn').addEventListener('click', () => {
+    const val = document.getElementById('sheetGotoInput').value.trim().toUpperCase();
+    const m = val.match(/^([A-Z]+)(\d+)$/);
+    if(!m) return;
+    const col = colLetterToIndex(m[1]);
+    const row = parseInt(m[2]);
+    if(col < 1 || col > SHEET_MAX_COL || row < 1 || row > SHEET_MAX_ROW) return;
+    sheetSelCol = col; sheetSelRow = row;
+    sheetEnsureViewportContains(col, row);
+    sheetUpdateSelection();
+    document.getElementById('sheetGotoInput').value = '';
+    vibrate(10);
+  });
+
+  document.getElementById('sheetUpBtn').addEventListener('click', () => {
+    sheetViewRow = Math.max(1, sheetViewRow - SHEET_VIEW_ROWS);
+    renderSheetGrid();
+    vibrate(8);
+  });
+  document.getElementById('sheetDownBtn').addEventListener('click', () => {
+    sheetViewRow = Math.min(SHEET_MAX_ROW - SHEET_VIEW_ROWS + 1, sheetViewRow + SHEET_VIEW_ROWS);
+    renderSheetGrid();
+    vibrate(8);
+  });
+  document.getElementById('sheetLeftBtn').addEventListener('click', () => {
+    sheetViewCol = Math.max(1, sheetViewCol - SHEET_VIEW_COLS);
+    renderSheetGrid();
+    vibrate(8);
+  });
+  document.getElementById('sheetRightBtn').addEventListener('click', () => {
+    sheetViewCol = Math.min(SHEET_MAX_COL - SHEET_VIEW_COLS + 1, sheetViewCol + SHEET_VIEW_COLS);
+    renderSheetGrid();
+    vibrate(8);
+  });
+  document.getElementById('sheetHomeBtn').addEventListener('click', () => {
+    sheetViewCol = 1; sheetViewRow = 1;
+    sheetSelCol = 1; sheetSelRow = 1;
+    sheetUpdateSelection();
+    vibrate(10);
+  });
+
   // ---- Nuevo archivo ----
   document.getElementById('newFileBtn').addEventListener('click', async () => {
-    if(history.length > 0 || mixDesignData){
+    const hasSheetData = Object.keys(sheetData).length > 0;
+    if(history.length > 0 || mixDesignData || hasSheetData){
       const ok = await showConfirm('¿Iniciar un archivo nuevo? Los cambios no guardados se perderán.');
       if(!ok) return;
     }
     history = [];
     currentFile = null;
     resetMixDesignUI();
+    sheetData = {};
     if(mixMode) closeMixDesign();
+    if(sheetMode) closeSheet();
     renderHistory();
     updateFileLabel();
     vibrate(12);
@@ -1809,9 +2843,11 @@
           let loadedMixDesign = null;
           if(Array.isArray(content)){
             history = content;
+            sheetData = {};
           } else {
             history = content.history || [];
             loadedMixDesign = content.mixDesign || null;
+            sheetData = content.sheet || {};
           }
           resetMixDesignUI();
           if(loadedMixDesign) restoreMixDesignUI(loadedMixDesign);
@@ -1821,6 +2857,7 @@
           closeOpenFileModal();
           document.getElementById('menuPanel').classList.remove('open');
           if(mixMode) closeMixDesign();
+          if(sheetMode) closeSheet();
           vibrate(12);
         });
 
