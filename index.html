@@ -65,6 +65,47 @@
   html[data-theme="notebook"] #currentLine{
     border-top-color: rgba(59,111,160,0.3);
   }
+
+  /* ---- Tema "Blanco y Negro": pantalla negra, texto blanco, sin color ---- */
+  html[data-theme="bw"]{
+    --accent: #808080;
+    --accent-dark: #555555;
+    --bg: #000000;
+    --screen-bg: #000000;
+    --key-bg: #e2e2e2;
+    --key-text: #000000;
+    --key-fn-bg: #2b2b2b;
+    --key-fn-text: #ffffff;
+  }
+  html[data-theme="bw"] #screen{
+    border-bottom-color: #555555;
+  }
+  html[data-theme="bw"] #expr,
+  html[data-theme="bw"] #expr2d,
+  html[data-theme="bw"] #expr.typing,
+  html[data-theme="bw"] #result,
+  html[data-theme="bw"] .hist-expr,
+  html[data-theme="bw"] .hist-res{
+    color: #ffffff;
+  }
+  html[data-theme="bw"] #expr{
+    caret-color: #ffffff;
+  }
+  html[data-theme="bw"] .hist-entry{
+    border-bottom-color: rgba(255,255,255,0.2);
+  }
+  html[data-theme="bw"] .hist-note{
+    color: #ffffff;
+    font-weight: 700;
+  }
+  html[data-theme="bw"] #currentLine{
+    border-top-color: rgba(255,255,255,0.25);
+  }
+  html[data-theme="bw"] #topbar{
+    background: #000000;
+    border-bottom-color: #000000;
+  }
+
   *{box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
   html,body{
     margin:0; padding:0;
@@ -834,8 +875,8 @@
     </div>
     <div class="kp-row">
       <button class="key fn" data-action="clear">Esc</button>
-      <button class="key fn" data-action=".">.</button>
       <button class="key num" data-action="0">0</button>
+      <button class="key fn" data-action=".">.</button>
       <button class="key equals" data-action="equals">⏎</button>
     </div>
   </div>
@@ -931,10 +972,11 @@
       <div class="seg-group" id="themeGroup">
         <button class="seg-btn theme-btn active" data-theme="classic">Clásico</button>
         <button class="seg-btn theme-btn" data-theme="notebook">Cuaderno</button>
+        <button class="seg-btn theme-btn" data-theme="bw">B/N</button>
       </div>
     </div>
 
-    <div class="setting-row">
+    <div class="setting-row" id="accentColorRow">
       <label>Color de acento</label>
       <div class="color-grid" id="colorGrid"></div>
     </div>
@@ -1142,8 +1184,14 @@
 
   function applySettings(){
     const c = COLORS[accentIndex];
-    document.documentElement.style.setProperty('--accent', c.accent);
-    document.documentElement.style.setProperty('--accent-dark', c.dark);
+    if(currentTheme === 'bw'){
+      // El tema B/N define sus propios grises en CSS; quitamos el color en línea para que se apliquen.
+      document.documentElement.style.removeProperty('--accent');
+      document.documentElement.style.removeProperty('--accent-dark');
+    } else {
+      document.documentElement.style.setProperty('--accent', c.accent);
+      document.documentElement.style.setProperty('--accent-dark', c.dark);
+    }
     const level = FONT_SIZE_LEVELS[fontSizeLevel] || FONT_SIZE_LEVELS[3];
     resultEl.style.fontSize = level.result + 'px';
     exprEl.style.fontSize = level.expr + 'px';
@@ -1160,6 +1208,7 @@
     document.querySelectorAll('.theme-btn').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.theme === currentTheme);
     });
+    document.getElementById('accentColorRow').style.display = currentTheme === 'bw' ? 'none' : '';
     buildColorGrid();
     updateDisplay();
   }
