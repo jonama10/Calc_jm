@@ -180,20 +180,13 @@
     border-top: 1px solid rgba(61,64,73,0.2);
   }
   #expr{
-    width:100%;
-    color:#6b7355;
-    min-height: 22px;
-    background:none; border:none; outline:none;
-    text-align:right;
-    font-family: var(--marker-font); font-size: 20px;
-    resize:none; overflow:hidden;
-    word-break: break-all; white-space: pre-wrap;
+    position:absolute;
+    opacity:0;
+    height:1px; width:1px;
+    overflow:hidden;
+    pointer-events:none;
+    border:none; outline:none; background:none;
     padding:0; margin:0;
-    caret-color: var(--accent-dark);
-  }
-  #expr.typing{
-    color:#2f3228;
-    font-weight:700;
   }
   #result{
     color:#2f3228;
@@ -225,8 +218,19 @@
     line-height:1.3;
     word-break: break-word;
     padding-bottom: 2px;
+    min-height: 1.3em;
+    cursor: text;
   }
   #expr2d.visible{ display:block; }
+  #expr2d .tapzone{ cursor:text; }
+  .expr2d-caret{
+    display:inline-block; width:2px; height:0.9em;
+    background: currentColor;
+    vertical-align: middle;
+    margin: 0 -1px;
+    animation: expr2dblink 1s step-start infinite;
+  }
+  @keyframes expr2dblink{ 50%{ opacity:0; } }
   #expr2d .frac{ font-size:0.62em; margin:0 4px; }
   .radical{ display:inline-flex; align-items:flex-start; vertical-align:middle; }
   .radical-sym{ font-size:1.05em; margin-right:1px; transform: scaleY(1.15); }
@@ -1178,9 +1182,25 @@
     }).catch(() => {});
   }
   document.addEventListener('visibilitychange', () => {
-    if(document.hidden) autoSaveOnClose();
+    if(document.hidden){
+      autoSaveOnClose();
+    } else {
+      // Al volver de segundo plano, Android a veces vuelve a mostrar el teclado
+      // QWERTY nativo sobre el campo que tenía el foco. Quitamos el foco para evitarlo;
+      // el usuario puede volver a tocar la pantalla para seguir escribiendo.
+      if(document.activeElement && document.activeElement !== document.body){
+        document.activeElement.blur();
+      }
+    }
   });
   window.addEventListener('pagehide', autoSaveOnClose);
+  // Respaldo adicional: algunos navegadores no disparan 'visibilitychange' de forma
+  // consistente al volver de segundo plano, pero sí disparan 'focus' en la ventana.
+  window.addEventListener('focus', () => {
+    if(document.activeElement && document.activeElement !== document.body){
+      document.activeElement.blur();
+    }
+  });
 
   function applySettings(){
     const c = COLORS[accentIndex];
@@ -1327,7 +1347,7 @@
     return s;
   }
 
-  // ---- Vista bidimensional de la expresión (estilo "libro de texto") ----
+  // ---- Vista bidimensional de la expresión (estilo "libro de texto"), editable ----
   function tokenizeExpr2D(str){
     const tokens = [];
     let i = 0;
@@ -1337,25 +1357,25 @@
       if(/[0-9.]/.test(c)){
         let j = i;
         while(j < str.length && /[0-9.]/.test(str[j])) j++;
-        tokens.push({type:'num', value: str.slice(i,j)});
+        tokens.push({type:'num', value: str.slice(i,j), start:i, end:j});
         i = j;
         continue;
       }
-      if(str.slice(i,i+3) === 'Ans'){ tokens.push({type:'ans'}); i += 3; continue; }
-      if(str.slice(i,i+3) === 'sin' && str[i+3] === '('){ tokens.push({type:'func', value:'sin'}); i += 3; continue; }
-      if(str.slice(i,i+3) === 'cos' && str[i+3] === '('){ tokens.push({type:'func', value:'cos'}); i += 3; continue; }
-      if(str.slice(i,i+3) === 'tan' && str[i+3] === '('){ tokens.push({type:'func', value:'tan'}); i += 3; continue; }
-      if(c === '√'){ tokens.push({type:'sqrt'}); i++; continue; }
-      if(c === 'π'){ tokens.push({type:'pi'}); i++; continue; }
-      if(c === '('){ tokens.push({type:'lparen'}); i++; continue; }
-      if(c === ')'){ tokens.push({type:'rparen'}); i++; continue; }
-      if('+-×÷^'.includes(c)){ tokens.push({type:'op', value:c}); i++; continue; }
+      if(str.slice(i,i+3) === 'Ans'){ tokens.push({type:'ans', start:i, end:i+3}); i += 3; continue; }
+      if(str.slice(i,i+3) === 'sin' && str[i+3] === '('){ tokens.push({type:'func', value:'sin', start:i, end:i+3}); i += 3; continue; }
+      if(str.slice(i,i+3) === 'cos' && str[i+3] === '('){ tokens.push({type:'func', value:'cos', start:i, end:i+3}); i += 3; continue; }
+      if(str.slice(i,i+3) === 'tan' && str[i+3] === '('){ tokens.push({type:'func', value:'tan', start:i, end:i+3}); i += 3; continue; }
+      if(c === '√'){ tokens.push({type:'sqrt', start:i, end:i+1}); i++; continue; }
+      if(c === 'π'){ tokens.push({type:'pi', start:i, end:i+1}); i++; continue; }
+      if(c === '('){ tokens.push({type:'lparen', start:i, end:i+1}); i++; continue; }
+      if(c === ')'){ tokens.push({type:'rparen', start:i, end:i+1}); i++; continue; }
+      if('+-×÷^'.includes(c)){ tokens.push({type:'op', value:c, start:i, end:i+1}); i++; continue; }
       i++; // carácter no reconocido: se omite para no romper el render
     }
     return tokens;
   }
 
-  function parseExpr2D(tokens){
+  function parseExpr2D(tokens, strLen){
     let pos = 0;
     const peek = () => tokens[pos];
     const next = () => tokens[pos++];
@@ -1363,81 +1383,102 @@
     function parseExprLevel(){
       let node = parseTerm();
       while(peek() && peek().type === 'op' && (peek().value === '+' || peek().value === '-')){
-        const op = next().value;
-        node = {type:'binop', op, left:node, right:parseTerm()};
+        const opTok = next();
+        const right = parseTerm();
+        node = {type:'binop', op:opTok.value, opStart:opTok.start, opEnd:opTok.end, left:node, right, start:node.start, end:right.end};
       }
       return node;
     }
     function parseTerm(){
       let node = parsePower();
       while(peek() && peek().type === 'op' && (peek().value === '×' || peek().value === '÷')){
-        const op = next().value;
-        node = {type:'binop', op, left:node, right:parsePower()};
+        const opTok = next();
+        const right = parsePower();
+        node = {type:'binop', op:opTok.value, opStart:opTok.start, opEnd:opTok.end, left:node, right, start:node.start, end:right.end};
       }
       return node;
     }
     function parsePower(){
       let node = parseUnary();
       if(peek() && peek().type === 'op' && peek().value === '^'){
-        next();
-        node = {type:'binop', op:'^', left:node, right:parsePower()};
+        const opTok = next();
+        const right = parsePower();
+        node = {type:'binop', op:'^', opStart:opTok.start, opEnd:opTok.end, left:node, right, start:node.start, end:right.end};
       }
       return node;
     }
     function parseUnary(){
       if(peek() && peek().type === 'op' && peek().value === '-'){
-        next();
-        return {type:'neg', value: parseUnary()};
+        const opTok = next();
+        const val = parseUnary();
+        return {type:'neg', minusStart:opTok.start, minusEnd:opTok.end, value:val, start:opTok.start, end:val.end};
       }
       return parsePrimary();
     }
     function parsePrimary(){
       const t = peek();
-      if(!t) return {type:'empty'};
-      if(t.type === 'num'){ next(); return {type:'num', value:t.value}; }
-      if(t.type === 'ans'){ next(); return {type:'ans'}; }
-      if(t.type === 'pi'){ next(); return {type:'pi'}; }
+      if(!t) return {type:'empty', start:strLen, end:strLen};
+      if(t.type === 'num'){ next(); return {type:'num', value:t.value, start:t.start, end:t.end}; }
+      if(t.type === 'ans'){ next(); return {type:'ans', start:t.start, end:t.end}; }
+      if(t.type === 'pi'){ next(); return {type:'pi', start:t.start, end:t.end}; }
       if(t.type === 'func'){
         next();
-        let inner = {type:'empty'};
+        let inner = {type:'empty', start:t.end+1, end:t.end+1};
+        let rparenEnd = t.end+1;
         if(peek() && peek().type === 'lparen'){
           next(); inner = parseExprLevel();
-          if(peek() && peek().type === 'rparen') next();
+          if(peek() && peek().type === 'rparen'){ rparenEnd = next().end; }
         }
-        return {type:'func', name:t.value, arg:inner};
+        return {type:'func', name:t.value, nameStart:t.start, nameEnd:t.end, arg:inner, start:t.start, end:rparenEnd};
       }
       if(t.type === 'sqrt'){
         next();
-        let inner = {type:'empty'};
+        let inner = {type:'empty', start:t.end+1, end:t.end+1};
+        let rparenEnd = t.end+1;
         if(peek() && peek().type === 'lparen'){
           next(); inner = parseExprLevel();
-          if(peek() && peek().type === 'rparen') next();
+          if(peek() && peek().type === 'rparen'){ rparenEnd = next().end; }
         }
-        return {type:'sqrt', arg:inner};
+        return {type:'sqrt', sqrtStart:t.start, sqrtEnd:t.end, arg:inner, start:t.start, end:rparenEnd};
       }
       if(t.type === 'lparen'){
-        next();
+        const lp = next();
         const inner = parseExprLevel();
-        if(peek() && peek().type === 'rparen') next();
-        return {type:'paren', arg:inner};
+        let rp = lp;
+        if(peek() && peek().type === 'rparen'){ rp = next(); }
+        return {type:'paren', lparenStart:lp.start, lparenEnd:lp.end, arg:inner, rparenStart:rp.start, rparenEnd:rp.end, start:lp.start, end:rp.end};
       }
       next();
-      return {type:'empty'};
+      return {type:'empty', start:t.start, end:t.start};
     }
     return parseExprLevel();
+  }
+
+  // Envuelve una "hoja" del árbol en una zona táctil con su posición exacta en el string plano
+  function tz2d(start, end, innerHtml){
+    return `<span class="tapzone" data-start="${start}" data-end="${end}">${innerHtml}</span>`;
+  }
+  function renderNumWithPositions(value, start){
+    let html = '';
+    for(let i=0; i<value.length; i++){
+      html += tz2d(start+i, start+i+1, value[i]);
+    }
+    return html;
   }
 
   function renderExpr2DNode(node){
     switch(node.type){
       case 'empty': return '';
-      case 'num': return node.value;
-      case 'ans': return 'Ans';
-      case 'pi': return 'π';
-      case 'neg': return '-' + renderExpr2DNode(node.value);
-      case 'paren': return '(' + renderExpr2DNode(node.arg) + ')';
-      case 'func': return node.name + '(' + renderExpr2DNode(node.arg) + ')';
+      case 'num': return renderNumWithPositions(node.value, node.start);
+      case 'ans': return tz2d(node.start, node.end, 'Ans');
+      case 'pi': return tz2d(node.start, node.end, 'π');
+      case 'neg': return tz2d(node.minusStart, node.minusEnd, '-') + renderExpr2DNode(node.value);
+      case 'paren':
+        return tz2d(node.lparenStart, node.lparenEnd, '(') + renderExpr2DNode(node.arg) + tz2d(node.rparenStart, node.rparenEnd, ')');
+      case 'func':
+        return tz2d(node.nameStart, node.nameEnd, node.name) + '(' + renderExpr2DNode(node.arg) + ')';
       case 'sqrt':
-        return `<span class="radical"><span class="radical-sym">√</span><span class="radical-bar">${renderExpr2DNode(node.arg)}</span></span>`;
+        return `<span class="radical">${tz2d(node.sqrtStart, node.sqrtEnd, '<span class="radical-sym">√</span>')}<span class="radical-bar">${renderExpr2DNode(node.arg)}</span></span>`;
       case 'binop':
         if(node.op === '÷'){
           return renderFractionHTML(renderExpr2DNode(node.left), renderExpr2DNode(node.right));
@@ -1445,9 +1486,36 @@
         if(node.op === '^'){
           return `<span>${renderExpr2DNode(node.left)}<sup>${renderExpr2DNode(node.right)}</sup></span>`;
         }
-        return renderExpr2DNode(node.left) + node.op + renderExpr2DNode(node.right);
+        return renderExpr2DNode(node.left) + tz2d(node.opStart, node.opEnd, node.op) + renderExpr2DNode(node.right);
     }
     return '';
+  }
+
+  // Inserta el indicador visual de cursor (parpadeante) en la posición correspondiente
+  // dentro del árbol ya renderizado, según exprEl.selectionStart.
+  function insertExpr2DCaret(container, cursorPos){
+    const spans = Array.from(container.querySelectorAll('.tapzone'));
+    let target = spans.find(s => parseInt(s.dataset.start) === cursorPos);
+    if(target){
+      const caret = document.createElement('span');
+      caret.className = 'expr2d-caret';
+      target.parentNode.insertBefore(caret, target);
+      return;
+    }
+    // Ninguna zona empieza exactamente ahí: buscar la que TERMINA en esa posición
+    let best = null;
+    spans.forEach(s => { if(parseInt(s.dataset.end) === cursorPos) best = s; });
+    if(best){
+      const caret = document.createElement('span');
+      caret.className = 'expr2d-caret';
+      if(best.nextSibling) best.parentNode.insertBefore(caret, best.nextSibling);
+      else best.parentNode.appendChild(caret);
+      return;
+    }
+    // Caso vacío u otro: cursor al final del contenedor
+    const caret = document.createElement('span');
+    caret.className = 'expr2d-caret';
+    container.appendChild(caret);
   }
 
   function updateExpr2D(){
@@ -1456,22 +1524,42 @@
     if(!val){
       el2d.classList.remove('visible');
       el2d.innerHTML = '';
+      insertExpr2DCaret(el2d, 0); // cursor visible incluso con la expresión vacía
+      el2d.classList.add('visible');
       return;
     }
     try{
       const tokens = tokenizeExpr2D(val);
-      const ast = parseExpr2D(tokens);
+      const ast = parseExpr2D(tokens, val.length);
       el2d.innerHTML = renderExpr2DNode(ast);
+      const cursorPos = exprEl.selectionStart != null ? exprEl.selectionStart : val.length;
+      insertExpr2DCaret(el2d, cursorPos);
       el2d.classList.add('visible');
     }catch(e){
       el2d.classList.remove('visible');
     }
   }
 
+  // Tocar la vista 2D coloca el cursor exactamente ahí (mitad izquierda/derecha del glifo)
+  document.getElementById('expr2d').addEventListener('click', (e) => {
+    const zone = e.target.closest('.tapzone');
+    let targetPos;
+    if(zone){
+      const rect = zone.getBoundingClientRect();
+      const midX = rect.left + rect.width / 2;
+      const s = parseInt(zone.dataset.start), en = parseInt(zone.dataset.end);
+      targetPos = (e.clientX < midX) ? s : en;
+    } else {
+      targetPos = exprEl.value.length;
+    }
+    exprEl.focus();
+    exprEl.setSelectionRange(targetPos, targetPos);
+    updateExpr2D();
+    vibrate(8);
+  });
+
   function updateDisplay(){
     const val = exprEl.value;
-    exprEl.style.height = 'auto';
-    exprEl.style.height = Math.min(exprEl.scrollHeight, 110) + 'px';
     if(val){
       exprEl.classList.add('typing');
       resultEl.classList.add('hidden');
