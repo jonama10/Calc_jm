@@ -231,6 +231,17 @@
     animation: expr2dblink 1s step-start infinite;
   }
   @keyframes expr2dblink{ 50%{ opacity:0; } }
+  .expr2d-slot{
+    display:inline-block; width:0.55em; height:0.85em;
+    background: currentColor; opacity:0.3;
+    border-radius: 3px;
+    vertical-align: middle;
+    margin: 0 2px;
+  }
+  .expr2d-endcap{
+    display:inline-block; width:5px; height:1em;
+    vertical-align: middle;
+  }
   #expr2d .frac{ font-size:0.62em; margin:0 4px; }
   .radical{ display:inline-flex; align-items:flex-start; vertical-align:middle; }
   .radical-sym{ font-size:1.05em; margin-right:1px; transform: scaleY(1.15); }
@@ -1423,23 +1434,37 @@
       if(t.type === 'pi'){ next(); return {type:'pi', start:t.start, end:t.end}; }
       if(t.type === 'func'){
         next();
-        let inner = {type:'empty', start:t.end+1, end:t.end+1};
-        let rparenEnd = t.end+1;
+        const lpStart = t.end, lpEnd = t.end + 1;
+        let inner = {type:'empty', start:lpEnd, end:lpEnd};
+        let closeStart = lpEnd, closeEnd = lpEnd; // por defecto: sin cierre real aún (zona de ancho 0)
         if(peek() && peek().type === 'lparen'){
-          next(); inner = parseExprLevel();
-          if(peek() && peek().type === 'rparen'){ rparenEnd = next().end; }
+          next();
+          inner = parseExprLevel();
+          if(peek() && peek().type === 'rparen'){
+            const rp = next();
+            closeStart = rp.start; closeEnd = rp.end;
+          } else {
+            closeStart = inner.end; closeEnd = inner.end;
+          }
         }
-        return {type:'func', name:t.value, nameStart:t.start, nameEnd:t.end, arg:inner, start:t.start, end:rparenEnd};
+        return {type:'func', name:t.value, nameStart:t.start, nameEnd:t.end, lpStart, lpEnd, arg:inner, closeStart, closeEnd, start:t.start, end:closeEnd};
       }
       if(t.type === 'sqrt'){
         next();
-        let inner = {type:'empty', start:t.end+1, end:t.end+1};
-        let rparenEnd = t.end+1;
+        const lpStart = t.end, lpEnd = t.end + 1;
+        let inner = {type:'empty', start:lpEnd, end:lpEnd};
+        let closeStart = lpEnd, closeEnd = lpEnd;
         if(peek() && peek().type === 'lparen'){
-          next(); inner = parseExprLevel();
-          if(peek() && peek().type === 'rparen'){ rparenEnd = next().end; }
+          next();
+          inner = parseExprLevel();
+          if(peek() && peek().type === 'rparen'){
+            const rp = next();
+            closeStart = rp.start; closeEnd = rp.end;
+          } else {
+            closeStart = inner.end; closeEnd = inner.end;
+          }
         }
-        return {type:'sqrt', sqrtStart:t.start, sqrtEnd:t.end, arg:inner, start:t.start, end:rparenEnd};
+        return {type:'sqrt', sqrtStart:t.start, sqrtEnd:t.end, arg:inner, closeStart, closeEnd, start:t.start, end:closeEnd};
       }
       if(t.type === 'lparen'){
         const lp = next();
@@ -1448,10 +1473,12 @@
         if(peek() && peek().type === 'rparen'){ rp = next(); }
         return {type:'paren', lparenStart:lp.start, lparenEnd:lp.end, arg:inner, rparenStart:rp.start, rparenEnd:rp.end, start:lp.start, end:rp.end};
       }
-      next();
+      // No consumimos el token: así, si es un ')' que marca contenido vacío
+      // (ej. "√()"), el llamador (sqrt/func/paren) lo detecta y lo cierra bien.
       return {type:'empty', start:t.start, end:t.start};
     }
-    return parseExprLevel();
+    const node = parseExprLevel();
+    return { node, pos }; // 'pos' = cuántos tokens se consumieron realmente
   }
 
   // Envuelve una "hoja" del árbol en una zona táctil con su posición exacta en el string plano
@@ -1468,7 +1495,7 @@
 
   function renderExpr2DNode(node){
     switch(node.type){
-      case 'empty': return '';
+      case 'empty': return tz2d(node.start, node.end, '<span class="expr2d-slot"></span>');
       case 'num': return renderNumWithPositions(node.value, node.start);
       case 'ans': return tz2d(node.start, node.end, 'Ans');
       case 'pi': return tz2d(node.start, node.end, 'π');
@@ -1476,9 +1503,9 @@
       case 'paren':
         return tz2d(node.lparenStart, node.lparenEnd, '(') + renderExpr2DNode(node.arg) + tz2d(node.rparenStart, node.rparenEnd, ')');
       case 'func':
-        return tz2d(node.nameStart, node.nameEnd, node.name) + '(' + renderExpr2DNode(node.arg) + ')';
+        return tz2d(node.nameStart, node.nameEnd, node.name) + tz2d(node.lpStart, node.lpEnd, '(') + renderExpr2DNode(node.arg) + tz2d(node.closeStart, node.closeEnd, ')');
       case 'sqrt':
-        return `<span class="radical">${tz2d(node.sqrtStart, node.sqrtEnd, '<span class="radical-sym">√</span>')}<span class="radical-bar">${renderExpr2DNode(node.arg)}</span></span>`;
+        return `<span class="radical">${tz2d(node.sqrtStart, node.sqrtEnd, '<span class="radical-sym">√</span>')}<span class="radical-bar">${renderExpr2DNode(node.arg)}</span></span>` + tz2d(node.closeStart, node.closeEnd, '<span class="expr2d-endcap"></span>');
       case 'binop':
         if(node.op === '÷'){
           return renderFractionHTML(renderExpr2DNode(node.left), renderExpr2DNode(node.right));
@@ -1521,22 +1548,42 @@
   function updateExpr2D(){
     const el2d = document.getElementById('expr2d');
     const val = exprEl.value;
+    const cursorPos = exprEl.selectionStart != null ? exprEl.selectionStart : val.length;
     if(!val){
-      el2d.classList.remove('visible');
       el2d.innerHTML = '';
       insertExpr2DCaret(el2d, 0); // cursor visible incluso con la expresión vacía
       el2d.classList.add('visible');
       return;
     }
     try{
-      const tokens = tokenizeExpr2D(val);
-      const ast = parseExpr2D(tokens, val.length);
-      el2d.innerHTML = renderExpr2DNode(ast);
-      const cursorPos = exprEl.selectionStart != null ? exprEl.selectionStart : val.length;
+      let tokens = tokenizeExpr2D(val);
+      let html = '';
+      let guard = 0;
+      // Procesa TODOS los tokens, incluso si quedan "sueltos" (no conectados por un
+      // operador válido) tras un estado intermedio de edición: así la vista nunca
+      // pierde parte de la expresión, aunque en ese instante no forme un árbol único.
+      while(tokens.length > 0 && guard < 300){
+        guard++;
+        const { node, pos } = parseExpr2D(tokens, val.length);
+        html += renderExpr2DNode(node);
+        if(pos > 0){
+          tokens = tokens.slice(pos);
+        } else {
+          // No se pudo incorporar el primer token (ej. un ')' suelto): mostrarlo
+          // igualmente como texto tocable y avanzar, para no colgarnos ni perderlo.
+          const stray = tokens[0];
+          html += tz2d(stray.start, stray.end, sheetEscapeHtml(val.slice(stray.start, stray.end)));
+          tokens = tokens.slice(1);
+        }
+      }
+      el2d.innerHTML = html;
       insertExpr2DCaret(el2d, cursorPos);
       el2d.classList.add('visible');
     }catch(e){
-      el2d.classList.remove('visible');
+      // Ante cualquier error inesperado, NUNCA dejar la vista en blanco/oculta:
+      // mostramos el texto plano tal cual para que siempre se pueda seguir viendo y editando.
+      el2d.textContent = val;
+      el2d.classList.add('visible');
     }
   }
 
@@ -1579,6 +1626,15 @@
     exprEl.value = val.slice(0, start) + text + val.slice(end);
     const newPos = start + text.length;
     exprEl.setSelectionRange(newPos, newPos);
+  }
+
+  // Inserta un par apertura+cierre (ej. "(" + ")", "√(" + ")") y deja el cursor
+  // JUSTO EN MEDIO, listo para escribir el contenido. Así el paréntesis/raíz
+  // queda siempre "cerrado" de verdad y se puede posicionar el cursor después de él.
+  function insertPairedAtCursor(openText, closeText){
+    insertAtCursor(openText + closeText);
+    const pos = exprEl.selectionStart - closeText.length;
+    exprEl.setSelectionRange(pos, pos);
   }
 
   // Borra el carácter justo antes del cursor (o la selección activa)
@@ -2361,6 +2417,7 @@
     const pos = exprEl.selectionStart != null ? exprEl.selectionStart : exprEl.value.length;
     const newPos = Math.max(0, Math.min(exprEl.value.length, pos + delta));
     exprEl.setSelectionRange(newPos, newPos);
+    updateExpr2D();
   }
 
   // ---- Edición de campos del formulario de mezcla usando el teclado de la calculadora ----
@@ -2537,10 +2594,22 @@
       case 'curright':
         moveCursor(1);
         return;
-      case 'sin': insertAtCursor('sin('); break;
-      case 'cos': insertAtCursor('cos('); break;
-      case 'tan': insertAtCursor('tan('); break;
-      case 'sqrt': insertAtCursor('√('); break;
+      case 'sin': insertPairedAtCursor('sin(', ')'); break;
+      case 'cos': insertPairedAtCursor('cos(', ')'); break;
+      case 'tan': insertPairedAtCursor('tan(', ')'); break;
+      case 'sqrt': insertPairedAtCursor('√(', ')'); break;
+      case '(': insertPairedAtCursor('(', ')'); break;
+      case ')': {
+        // Si el caracter justo despues del cursor ya es un ')' (por el autocierre),
+        // simplemente saltamos sobre el en vez de insertar uno de mas.
+        const p = exprEl.selectionStart;
+        if(exprEl.value[p] === ')'){
+          exprEl.setSelectionRange(p + 1, p + 1);
+        } else {
+          insertAtCursor(')');
+        }
+        break;
+      }
       case 'pow': insertAtCursor('^'); break;
       case 'square': insertAtCursor('^2'); break;
       case 'pi': insertAtCursor('π'); break;
